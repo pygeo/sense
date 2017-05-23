@@ -2,6 +2,7 @@
 Basic class for scattering modelling
 '''
 
+import numpy as np
 
 class Model(object):
     def __init__(self):
@@ -41,9 +42,25 @@ class Model(object):
 
 class SingleScatRT(Model):
     def __init__(self, **kwargs):
+        """
+        Single scattering model according to Ulaby and Long (2014)
+        Eq. 11.17
+
+        Parameters
+        ----------
+        """
         super(SingleScatRT, self).__init__(**kwargs)
         self.ground = kwargs.get('ground', None)
         self.canopy = kwargs.get('canopy', None)
+        self.cground = kwargs.get('canopy_ground', None)
+        self.gcg = kwargs.get('ground_canopy_ground', None)
+        self._check()
+
+    def _check(self):
+        assert self.ground is not None
+        assert self.canopy is not None
+        assert self.cground is not None
+        assert self.gcg is not None
 
     def _sigma0(self):
         """
@@ -52,8 +69,11 @@ class SingleScatRT(Model):
         """
 
         # ground backscatter
-        s0g = self.
-
+        s0g = self.ground.sigma()
+        # canopy contribution
+        s0c = self.canopy.sigma()
+        # total canopy ground contribution
+        s0cgt
 
         return s0g + s0c + s0cgt + s0gcg
 
