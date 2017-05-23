@@ -31,6 +31,9 @@ class Model(object):
         else:
             return self._sigma0()
 
+    def _sigma0(self, **kwargs):
+        assert False, 'routine should be implemented in child class!'
+
     def _check_pol(self):
         if len(self.pol) == 0:
             assert 'ERROR: polarization needs to be specified'
@@ -48,6 +51,14 @@ class SingleScatRT(Model):
 
         Parameters
         ----------
+        ground : Model
+            model for ground scattering
+        canopy : Model
+            Model for canopy scattering
+        canopy_ground : Model
+            model for canopy-ground scattering
+        ground_canopy_ground : Model
+            model for ground canopy interaction
         """
         super(SingleScatRT, self).__init__(**kwargs)
         self.ground = kwargs.get('ground', None)
@@ -73,7 +84,37 @@ class SingleScatRT(Model):
         # canopy contribution
         s0c = self.canopy.sigma()
         # total canopy ground contribution
-        s0cgt
+        s0cgt = self.cground.sigma()
+        # ground-canopy-ground interaction
+        s0gcg = self.gcg.sigma()
 
         return s0g + s0c + s0cgt + s0gcg
+
+
+
+class Ground(Model):
+    """
+    calculate the (attenuated) ground contribution
+    sigma_pq
+    where p is receive and q is transmit polarization
+    """
+    def __init__(self):
+        super(Ground, self).__init__()
+
+    def _sigma(self, C, S):
+        """
+        Parameters
+        ----------
+        C : Canopy
+            description of the canopy
+        S : Soil
+            description of the soil
+            
+        """
+
+
+# 502-503
+
+
+
 
