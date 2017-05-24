@@ -9,6 +9,7 @@ Oh et al. (1992): An empirical model and an inversion technique for radar scatte
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from .. core import Fresnel0
 from .. core import Reflectivity
@@ -55,7 +56,15 @@ class Oh92(object):
         b = np.cos(self.theta)**3. * (self.G.v+self.G.h) / np.sqrt(self.p) 
         return a*b
 
-
+    def plot(self):
+        f = plt.figure()
+        ax = f.add_subplot(111)
+        t = np.rad2deg(self.theta)
+        ax.plot(t, self.hh, color='blue', label='hh')
+        ax.plot(t, self.vv, color='red', label='vv')
+        ax.plot(t, self.hv, color='green', label='hv')
+        ax.grid()
+        ax.legend()
 
 
 
