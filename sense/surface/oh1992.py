@@ -48,7 +48,7 @@ class Oh92(object):
         self.p = (1.- (2.*self.theta/np.pi)**a * np.exp(-self.ks)     )**2.
 
     def _calc_q(self):
-        self.q = 0.23*(self.G0.x)**0.5 * (1.-np.exp(self.ks))
+        self.q = 0.23*(self.G0.x)**0.5 * (1.-np.exp(-self.ks))
 
     def _calc_vv(self):
 
@@ -60,11 +60,15 @@ class Oh92(object):
         f = plt.figure()
         ax = f.add_subplot(111)
         t = np.rad2deg(self.theta)
-        ax.plot(t, self.hh, color='blue', label='hh')
-        ax.plot(t, self.vv, color='red', label='vv')
-        ax.plot(t, self.hv, color='green', label='hv')
+        ax.plot(t, 10.*np.log10(self.hh), color='blue', label='hh')
+        ax.plot(t, 10.*np.log10(self.vv), color='red', label='vv')
+        ax.plot(t, 10.*np.log10(self.hv), color='green', label='hv')
         ax.grid()
+        #ax.set_ylim(-25.,0.)
+        #ax.set_xlim(0.,70.)
         ax.legend()
+        ax.set_xlabel('incidence angle [deg]')
+        ax.set_ylabel('backscatter [dB]')
 
 
 
