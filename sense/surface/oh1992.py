@@ -42,7 +42,6 @@ class Oh92(object):
         self.hh = self.p * self.vv
         self.hv = self.q * self.vv
 
-
     def _calc_p(self):
         a = 1./(3.*self.G0.x)
         self.p = (1.- (2.*self.theta/np.pi)**a * np.exp(-self.ks)     )**2.
