@@ -17,7 +17,7 @@ import json
 # from setuptools import setup #, Extension
 from setuptools import find_packages  # Always prefer setuptools over distutils
 # from Cython.Distutils import build_ext
-from Cython.Build import cythonize
+#from Cython.Build import cythonize
 
 
 
