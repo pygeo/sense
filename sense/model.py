@@ -1,6 +1,6 @@
-'''
+"""
 Basic class for scattering modelling
-'''
+"""
 
 import numpy as np
 
@@ -98,19 +98,70 @@ class Ground(Model):
     sigma_pq
     where p is receive and q is transmit polarization
     """
-    def __init__(self):
+    def __init__(self, S, C):
+        """
+        calculate the attenuated ground contribution
+        to the scattering
+
+        Parameters
+        ----------
+        S : Surface Model
+            class of surface model. Needs to have
+            attributes vv, hh, hv
+        """
         super(Ground, self).__init__()
+
+
+
+
 
     def _sigma(self, C, S):
         """
+        calculate the backscattering coefficient
+        Eq. 11.4, p.463 Ulaby (2014)
+        """
+
+        # canopy transmisivities
+        t_h = C.t_h
+        t_v = C.t_v
+
+        # backscatter
+        s_hh = S.hh*t_h*t_h
+        s_vv = S.vv*t_v*t_v
+        s_hv = S.hv*t_v*t_h
+
+
+
+class CanopyHomo(object):
+    """
+    homogeneous canopy
+    assumes homogeneous vertical distribution of scatterers
+    """
+    def __init__(self, ke_h, ke_v, d, theta):
+        """
         Parameters
         ----------
-        C : Canopy
-            description of the canopy
-        S : Soil
-            description of the soil
-            
+        ke_h, ke_v : float
+            volume extinction coefficient [Np/m]
+        d : float
+            height of canopy layer
+        theta : float, ndarray
+            incidence angle [rad]
         """
+        self.ke_h = ke_h
+        self.ke_v = ke_v
+        self.theta = theta
+        self.d = d
+
+        self.tau_h = self._tau(self.ke_h)
+        self.tau_v = self._tau(self.ke_v)
+        self.t_h = np.exp(-self.tau_h)
+        self.t_v = np.exp(-self.tau_v)
+
+    def _tau(self, k):
+        # assumption: extinction is isotropic
+        return k*self.d/np.cos(self.theta)
+
 
 
 # 502-503
