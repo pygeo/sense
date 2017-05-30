@@ -1,0 +1,68 @@
+language: python
+python:
+ - "2.7"
+ - "3.4"
+ - "3.5"
+ - "3.6"
+
+branches:
+    only:
+        - master
+        - dev
+
+virtualenv:
+system_site_packages: true
+
+
+# from https://conda.io/docs/travis.html
+install:
+    - sudo apt-get update 
+
+    # install conda
+    - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+        wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+      else
+        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+      fi
+
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - export PATH="$HOME/miniconda/bin:$PATH"
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+      
+    # Useful for debugging any issues with conda
+    - conda info -a
+    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
+
+    # now install package specific dependencies
+    # - conda install -n test-environment -c conda-forge matplotlib
+    # - conda install -q -n test-environment -c conda-forge scipy python-cdo basemap cartopy netcdf4 pyshp cython shapely
+
+    # install own version of nose, as otherwise the nosetest command will be exectuted in a different environment
+    # and modules are then not found
+    - conda install -n test-environment -c conda-forge nose
+
+    # now install package
+    - source activate test-environment
+    # - python setup.py build_ext --inplace
+    - python setup.py build
+    - python setup.py install
+
+
+before_script:
+  # mimic an Xserver to avoid the problem that Matplotlib has no backend available
+  # https://docs.travis-ci.com/user/gui-and-headless-browsers/
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
+
+script:
+ - source activate test-environment
+ - nosetests 
+
+
+
+
+
+
