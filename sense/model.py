@@ -5,7 +5,7 @@ Basic class for scattering modelling
 import numpy as np
 
 class Model(object):
-    def __init__(self):
+    def __init__(self, **kwargs):
         pass
 
     def sigma0(self, **kwargs):
@@ -136,6 +136,8 @@ class CanopyHomo(object):
     """
     homogeneous canopy
     assumes homogeneous vertical distribution of scatterers
+
+    in that case the Lambert Beer law applies
     """
     def __init__(self, ke_h, ke_v, d, theta):
         """
