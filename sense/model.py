@@ -139,8 +139,8 @@ class Ground(object):
 
 
         # set canopy models
-        if RT_c == 'nix':
-            assert False
+        if RT_c == 'dummy':
+            print('Still need to implement the canopy model here')
         else:
             assert False, 'Invalid canopy scattering model'
 
@@ -177,7 +177,7 @@ class CanopyHomo(object):
 
     in that case the Lambert Beer law applies
     """
-    def __init__(self, ke_h, ke_v, d, theta):
+    def __init__(self, **kwargs):
         """
         Parameters
         ----------
@@ -188,10 +188,10 @@ class CanopyHomo(object):
         theta : float, ndarray
             incidence angle [rad]
         """
-        self.ke_h = ke_h
-        self.ke_v = ke_v
-        self.theta = theta
-        self.d = d
+        self.ke_h = kwargs.get('ke_h', None)
+        self.ke_v = kwargs.get('ke_v', None)
+        self.theta = kwargs.get('theta', None)
+        self.d = kwargs.get('d', None)
 
         self.tau_h = self._tau(self.ke_h)
         self.tau_v = self._tau(self.ke_v)

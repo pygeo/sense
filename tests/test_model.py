@@ -5,6 +5,8 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)) + os.sep + "..")
 
 import numpy as np
 from sense import model
+from sense.soil import Soil
+from sense.model import CanopyHomo
 
 class TestModel(unittest.TestCase):
     def test_init(self):
@@ -22,7 +24,10 @@ class TestSingle(unittest.TestCase):
     def test_scat(self):
         # some dummy variables
         models = {'surface': 'Oh92', 'canopy':'dummy'}
-        S = model.SingleScatRT(surface='abc', canopy='def', models=models, theta=self.theta)
+        eps = 5. -3.j
+        soil = Soil(eps=eps, f=5., s=0.02)
+        can = CanopyHomo(ke_h=0.05, ke_v=0.02, d=3., theta=np.arange(1.,80.))
+        S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=self.theta)
         S.sigma0()
 
 if __name__ == '__main__':
