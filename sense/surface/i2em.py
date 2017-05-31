@@ -16,6 +16,9 @@ class I2EM(object):
         theta : float
             incidence angle [rad]
         """
+        self.eps = eps
+        self.ks = ks
+        self.theta = theta
         self._calc_sigma_backscatter()
 
     def _calc_sigma_backscatter(self):
