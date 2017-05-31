@@ -11,10 +11,11 @@ Oh et al. (1992): An empirical model and an inversion technique for radar scatte
 import numpy as np
 import matplotlib.pyplot as plt
 
+from . scatter import SurfaceScatter
 from .. core import Fresnel0
 from .. core import Reflectivity
 
-class Oh92(object):
+class Oh92(SurfaceScatter):
     def __init__(self, eps, ks, theta):
         """
         Parameters
@@ -27,10 +28,7 @@ class Oh92(object):
         theta : float, ndarray
             incidence angle [rad]
         """
-
-        self.eps = eps
-        self.ks = ks
-        self.theta = theta
+        super(Oh92, self).__init__(eps, ks, theta)
 
         # calculate p and q
         self.G0 = Fresnel0(self.eps)  # nadir fresnel reflectivity
