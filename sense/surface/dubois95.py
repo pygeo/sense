@@ -3,8 +3,9 @@ implements the Dubois95 model
 as described in Ulaby (2014), Chapter 10.6
 """
 import numpy as np
+from . scatter import SurfaceScatter
 
-class Dubois95(object):
+class Dubois95(SurfaceScatter):
     def __init__(self, eps, ks, theta, lam=None):
         """
         Parameters
@@ -12,9 +13,8 @@ class Dubois95(object):
         lam : float
             wavelength in meter
         """
-        self.theta = theta
-        self.ks = ks
-        self.eps = eps
+
+        super(Dubois95, self).__init__(eps, ks, theta)
         self.lam = lam
         assert self.lam is not None
         self.vv, self.hh = self._calc_sigma()
