@@ -12,11 +12,8 @@ class TestModel(unittest.TestCase):
 class TestSingle(unittest.TestCase):
     def test_init(self):
         # some dummy variables
-        g = 'abc'
-        c = 'def'
-        cg = 'ghj'
-        gcg = 'klm'
-        S = model.SingleScatRT(ground=g, canopy=c, canopy_ground=cg, ground_canopy_ground=gcg)
+        models = {'surface': 'abc', 'canopy':'efg'}
+        S = model.SingleScatRT(surface='abc', canopy='def', models=models)
 
 if __name__ == '__main__':
     unittest.main()

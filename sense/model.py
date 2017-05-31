@@ -27,6 +27,7 @@ class Model(object):
         self._check_pol()
 
         if self.dB:
+            assert False, 'Not supported for dictionaries yet!'
             return 10.*np.log10(self._sigma0())
         else:
             return self._sigma0()
@@ -51,27 +52,29 @@ class SingleScatRT(Model):
 
         Parameters
         ----------
-        ground : Model
-            model for ground scattering
-        canopy : Model
-            Model for canopy scattering
-        canopy_ground : Model
-            model for canopy-ground scattering
-        ground_canopy_ground : Model
-            model for ground canopy interaction
+        surface : Surface description
+            object describing the surface
+        canopy : Canopy description
+            object describing the canopy
+        models : dict
+            dictionary with configuration of scattering models
         """
         super(SingleScatRT, self).__init__(**kwargs)
-        self.ground = kwargs.get('ground', None)
+        self.surface = kwargs.get('surface', None)
         self.canopy = kwargs.get('canopy', None)
-        self.cground = kwargs.get('canopy_ground', None)
-        self.gcg = kwargs.get('ground_canopy_ground', None)
+        self.models = kwargs.get('models', None)
+        
+        #self.cground = kwargs.get('canopy_ground', None)
+        #self.gcg = kwargs.get('ground_canopy_ground', None)
         self._check()
 
     def _check(self):
-        assert self.ground is not None
+        assert self.surface is not None
         assert self.canopy is not None
-        assert self.cground is not None
-        assert self.gcg is not None
+        assert self.models is not None
+
+        for k in ['surface', 'canopy']:
+            assert k in self.models.keys()  # check that all models have been specified
 
     def _sigma0(self):
         """
@@ -79,56 +82,68 @@ class SingleScatRT(Model):
         based on Eq. 11.17 in Ulaby and Long (2014)
         """
 
-        # ground backscatter
-        s0g = self.ground.sigma()
+        # ground backscatter = attenuated surface
+        G = Ground(self.surface, self.canopy)
+        s0g = G.sigma()
         # canopy contribution
-        s0c = self.canopy.sigma()
+        #s0c = self.canopy.sigma()
         # total canopy ground contribution
-        s0cgt = self.cground.sigma()
+        #s0cgt = self.cground.sigma()
         # ground-canopy-ground interaction
-        s0gcg = self.gcg.sigma()
+        #s0gcg = self.gcg.sigma()
 
-        return s0g + s0c + s0cgt + s0gcg
+        return None #s0g + s0c + s0cgt + s0gcg
 
 
 
-class Ground(Model):
+class Ground(object):
     """
     calculate the (attenuated) ground contribution
     sigma_pq
     where p is receive and q is transmit polarization
     """
-    def __init__(self, S, C):
+    def __init__(self, S, C, RT_s, RT_c):
         """
         calculate the attenuated ground contribution
         to the scattering
 
         Parameters
         ----------
-        S : Surface Model
-            class of surface model. Needs to have
-            attributes vv, hh, hv
+        S : object
+            descibing the surface properties
+        C : object
+            describing the canopy properties
+        RT_s : str
+            key describing the surface scattering model
+        RT_c : str
+            key specifying the canopy scattering model
         """
-        super(Ground, self).__init__()
+        self.S = S
+        self.C = C
+        self._check(RT_s, RT_c)
 
+    def _check(self, RT_s, RT_c):
+        valid_surface = ['Oh92']
+        valid_canopy = ['dummy']
+        assert RT_s in valid_surface
+        assert RT_c in valid_canopy
 
-
-
-
-    def _sigma(self, C, S):
+    def sigma(self):
         """
         calculate the backscattering coefficient
         Eq. 11.4, p.463 Ulaby (2014)
         """
 
         # canopy transmisivities
-        t_h = C.t_h
-        t_v = C.t_v
+        t_h = self.C.t_h
+        t_v = self.C.t_v
 
         # backscatter
-        s_hh = S.hh*t_h*t_h
-        s_vv = S.vv*t_v*t_v
-        s_hv = S.hv*t_v*t_h
+        s_hh = self.S.hh*t_h*t_h
+        s_vv = self.S.vv*t_v*t_v
+        s_hv = self.S.hv*t_v*t_h
+
+        return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
 
 
 
