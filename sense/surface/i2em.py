@@ -2,10 +2,11 @@
 implements the I2EM model (see Ulaby (2014), Chapter 10
 backscattering model for single scale random surfaces
 """
+from scatter import SurfaceScatter
+import numpy as np
 
-
-class I2EM(object):
-    def __init__(self, eps, ks, theta):
+class I2EM(SurfaceScatter):
+    def __init__(self, eps, ks, kl, theta):
         """
         Parameters
         ----------
@@ -16,9 +17,7 @@ class I2EM(object):
         theta : float
             incidence angle [rad]
         """
-        self.eps = eps
-        self.ks = ks
-        self.theta = theta
+        super(I2EM, self).__init__(eps, ks, theta, kl=kl)
         self._calc_sigma_backscatter()
 
     def _calc_sigma_backscatter(self):
@@ -27,5 +26,11 @@ class I2EM(object):
         phi_s = np.deg2rad(180.)
 
         # calculate backscattering coefficients
-        self.vv, self.hh = self.i2em_bistatic()
-        self.hv = self.i2em_cross()
+        self.vv, self.hh = self._i2em_bistatic()
+        self.hv = self._i2em_cross()
+
+    def _i2em_bistatic(self):
+        return None, None
+
+    def _i2em_cross(self):
+        return None
