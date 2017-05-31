@@ -3,10 +3,16 @@ Basic class for scattering modelling
 """
 
 import numpy as np
+from . surface import Oh92
 
 class Model(object):
     def __init__(self, **kwargs):
-        pass
+        self.theta = kwargs.get('theta', None)
+
+        self._check1()
+
+    def _check1(self):
+        assert self.theta is not None, 'ERROR: no incidence angle was specified!'
 
     def sigma0(self, **kwargs):
         '''
@@ -83,7 +89,7 @@ class SingleScatRT(Model):
         """
 
         # ground backscatter = attenuated surface
-        G = Ground(self.surface, self.canopy)
+        G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta)
         s0g = G.sigma()
         # canopy contribution
         #s0c = self.canopy.sigma()
@@ -102,7 +108,7 @@ class Ground(object):
     sigma_pq
     where p is receive and q is transmit polarization
     """
-    def __init__(self, S, C, RT_s, RT_c):
+    def __init__(self, S, C, RT_s, RT_c, theta=None):
         """
         calculate the attenuated ground contribution
         to the scattering
@@ -120,13 +126,30 @@ class Ground(object):
         """
         self.S = S
         self.C = C
+        self.theta = theta
         self._check(RT_s, RT_c)
+        self._set_models(RT_s, RT_c)
+
+    def _set_models(self, RT_s, RT_c):
+        # set surface model
+        if RT_s == 'Oh92':
+            self.rt_s = Oh92(self.S.eps, self.S.ks, self.theta)
+        else:
+            assert False
+
+
+        # set canopy models
+        if RT_c == 'nix':
+            assert False
+        else:
+            assert False, 'Invalid canopy scattering model'
 
     def _check(self, RT_s, RT_c):
         valid_surface = ['Oh92']
         valid_canopy = ['dummy']
-        assert RT_s in valid_surface
+        assert RT_s in valid_surface, 'ERROR: invalid surface scattering model was chosen!'
         assert RT_c in valid_canopy
+        assert self.theta is not None
 
     def sigma(self):
         """
@@ -139,9 +162,9 @@ class Ground(object):
         t_v = self.C.t_v
 
         # backscatter
-        s_hh = self.S.hh*t_h*t_h
-        s_vv = self.S.vv*t_v*t_v
-        s_hv = self.S.hv*t_v*t_h
+        s_hh = self.rt_s.hh*t_h*t_h
+        s_vv = self.rt_s.vv*t_v*t_v
+        s_hv = self.rt_s.hv*t_v*t_h
 
         return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
 
