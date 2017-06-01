@@ -188,15 +188,38 @@ class Roughness(object):
     def __init__(self, **kwargs):
         self.niter = kwargs.get('niter', None)
         self.l = kwargs.get('l', None)
+        self.theta = kwargs.get('theta', None)
+        self.thetas = kwargs.get('thetas', None)
+        self.phi = kwargs.get('phi', None)
+        self.phis = kwargs.get('phis', None)
+        self.freq = kwargs.get('freq', None)
         self.n = np.arange(self.niter)+1
         self._check()
+        self._init()
 
     def wn(self):
         assert False, 'Should be implemented in child class!'
 
+    def _init(self):
+        ss = np.sin(self.thetas)
+        s = np.sin(self.theta)
+        sf = np.sin(self.phi)
+        sfs = np.sin(self.phis)
+        cfs = np.cos(self.phis)
+        cf = np.cos(self.phi)
+        lam = f2lam(self.freq)
+        self.k = 2*np.pi / lam
+        
+        self.wvnb = self.k * np.sqrt( (ss *cfs - s *cf)**2. + (ss * sfs - s * sf)**2. )
+
     def _check(self):
         assert self.niter is not None
         assert self.l is not None
+        assert self.theta is not None
+        assert self.thetas is not None
+        assert self.phi is not None
+        assert self.phis is not None
+        assert self.freq is not None
 
 
 class GaussianSpectrum(Roughness):
@@ -205,7 +228,7 @@ class GaussianSpectrum(Roughness):
     
     def wn(self):
         n = self.n
-        wn = np.sum((self.l**2.)/(2.*n) * np.exp(-(wvnb*self.l)**2. / (4.*n)))
+        wn = np.sum((self.l**2.)/(2.*n) * np.exp(-(self.wvnb*self.l)**2. / (4.*n)))
         return wn
 
 
