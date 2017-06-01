@@ -10,12 +10,12 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)) + os.sep + '..')
 import numpy as np
 
 from sense.surface import Dubois95, Oh92
+from sense.util import f2lam
 
 import matplotlib.pyplot as plt
 
 plt.close('all')
 
-KS = np.linspace(0.06,0.82,100)
 theta = np.deg2rad(40.)
 eps = 5.46 -0.37j
 
@@ -26,11 +26,18 @@ s_hh_o = []
 s_vv_d = []
 s_hh_d = []
 
-for ks in KS:
+
+f  = 1.6  # GHz
+lam = f2lam(f)  # m
+k = 2.*np.pi/lam
+
+S= np.linspace(0.0001,0.03, 500)
+
+KS = []        
+for s in S:
+
+    ks = k*s
     # Dubois 95
-    #s = 1.
-    #lam = 2.*np.pi*s/ks   # calculate some arbitrary wavelength in meter
-    lam = 2.*np.pi   # still todo
     D = Dubois95(eps, ks, theta, lam)
     s_hh_d.append(D.hh)
     s_vv_d.append(D.vv)
@@ -39,6 +46,10 @@ for ks in KS:
     O = Oh92(eps, ks, theta)
     s_vv_o.append(O.vv)
     s_hh_o.append(O.hh)
+
+    KS.append(ks)
+
+KS = np.array(KS)
 
 s_vv_o = 10.*np.log10(np.array(s_vv_o))
 s_hh_o = 10.*np.log10(np.array(s_hh_o))
