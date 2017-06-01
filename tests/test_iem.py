@@ -23,6 +23,8 @@ class Test_IEM(unittest.TestCase):
         self.assertEqual(O.ks, O.k*O.s)
         self.assertEqual(O.kl, O.k*O.l)
 
+    def test_scat(self):
+        O = I2EM(self.f, self.eps, self.s, self.l, self.theta)
 
 if __name__ == '__main__':
     unittest.main()

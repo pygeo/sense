@@ -134,9 +134,42 @@ class I2EM(SurfaceScatter):
         return np.ones(self.niter)
 
     def _calc_Ipp(self):
-        Ivv = 1.
-        Ihh = 1.
-        print('TODO Ipp')
-        return Ivv, Ihh
+        n = np.arange(self.niter)+1
+        qi = self.k*self._cs
+        qs = self.k*self._css
+
+        h1= np.exp(-self.s**2. * self._kz * self._ksz)*(self._kz + self._ksz)**n
+
+        # Calculate the Fppup(dn) i(s) coefficients
+        Fvvupi, Fhhupi = self.Fppupdn()
+        Fvvups, Fhhups = self.Fppupdn()
+        Fvvdni, Fhhdni = self.Fppupdn()
+        Fvvdns, Fhhdns = self.Fppupdn()
+
+        # fpp calculations
+        fvv, fhh = self.calc_fpp()
+
+        # Ipp
+        Ivv = fvv*h1
+        Ivv += 0.25*(Fvvupi *(self._ksz-qi)**(n-1) *np.exp(-self.s**2. *(qi**2. - qi*(self._ksz-self._kz))))
+        Ivv += 0.25*(Fvvdni *(self._ksz+qi)**(n-1) *np.exp(-self.s**2. *(qi**2. + qi*(self._ksz-self._kz))))
+        Ivv += 0.25*(Fvvups *(self._kz +qs)**(n-1) *np.exp(-self.s**2. *(qs**2. - qs*(self._ksz-self._kz))))
+        Ivv += 0.25*(Fvvdns *(self._kz -qs)**(n-1) *np.exp(-self.s**2. *(qs**2. + qs*(self._ksz-self._kz))))
+
+        Ihh = fhh*h1
+        Ihh += 0.25*(Fhhupi *(self._ksz-qi)**(n-1) *np.exp(-self.s**2. *(qi**2. - qi*(self._ksz-self._kz))))
+        Ihh += 0.25*(Fhhdni *(self._ksz+qi)**(n-1) *np.exp(-self.s**2. *(qi**2. + qi*(self._ksz-self._kz))))
+        Ihh += 0.25*(Fhhups *(self._kz +qs)**(n-1) *np.exp(-self.s**2. *(qs**2. - qs*(self._ksz-self._kz))))
+        Ihh += 0.25*(Fhhdns *(self._kz -qs)**(n-1) *np.exp(-self.s**2. *(qs**2. + qs*(self._ksz-self._kz))))
+
+        return np.sum(Ivv), np.sum(Ihh)
+
+    def calc_fpp(self):
+        return 1., 1.
+
+
+    def Fppupdn(self):
+        return 1., 1.
+
 
 
