@@ -194,14 +194,14 @@ class Roughness(object):
     def wn(self):
         assert False, 'Should be implemented in child class!'
 
-    def _check():
+    def _check(self):
         assert self.niter is not None
         assert self.l is not None
 
 
-class Gaussian(Roughness):
+class GaussianSpectrum(Roughness):
     def __init__(self, **kwargs):
-        super(Gaussian, self).__init__(**kwargs)
+        super(GaussianSpectrum, self).__init__(**kwargs)
     
     def wn(self):
         n = self.n
