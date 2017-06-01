@@ -13,7 +13,7 @@ from .. util import f2lam
 import math
 
 class I2EM(SurfaceScatter):
-    def __init__(self, f, eps, s, l, theta, thetas, phis):
+    def __init__(self, f, eps, s, l, theta):
         """
         Parameters
         ----------
@@ -27,14 +27,8 @@ class I2EM(SurfaceScatter):
             autocorrelation length [m]
         theta : float
             incidence angle [rad]
-        thetas : float
-            scattering angle [rad]
-        phis : float
-            azimuth angle for scattering [rad]
         """
 
-        self.phi = 0.
-        self.phis = phis
 
         self.freq = f
         lam = f2lam(self.freq)
@@ -43,8 +37,12 @@ class I2EM(SurfaceScatter):
         self.s = s
         self.l = l
         super(I2EM, self).__init__(eps, k*s, theta, kl=k*l)
-        self.thetas = thetas
         
+        # assume backscatter geometry
+        self.phi = 0.
+        self.thetas = self.theta*1.
+        self.phis = np.deg2rad(180.)
+
         # do initializations for backscatter calculations
         self._init_hlp()
         self.init_model()
@@ -93,16 +91,52 @@ class I2EM(SurfaceScatter):
         self._ksz = self.k * self._css
 
     def _calc_sigma_backscatter(self):
-        # define backscatter geometry
-        theta_s = self.theta*1.
-        phi_s = np.deg2rad(180.)
-
+        assert isinstance(self.theta, float), 'Currently array processing not supported yet!'
         # calculate backscattering coefficients
         self.vv, self.hh = self._i2em_bistatic()
         self.hv = self._i2em_cross()
 
     def _i2em_bistatic(self):
-        return None, None
+        sigvv = 0.
+        sighh = 0.
+        
+        Ivv, Ihh = self._calc_Ipp()
+        Ivv_abs = np.abs(Ivv)
+        Ihh_abs = np.abs(Ihh)
+        wn = self.calc_roughness_spectrum() 
+
+        # calculate shadowing effects
+        ShdwS = self._calc_shadowing()
+
+        # calculate the integral
+        idx = np.arange(self.niter)+1
+        fac = map(math.factorial, idx)
+        a0 = wn / fac * (self.s**(2.*idx))
+
+        # final backscatter calculation
+        hlp = 0.5*self.k**2*np.exp(-self.s**2*(self._kz**2.+self._ksz**2.))
+        sigvv = np.sum(a0 * Ivv_abs**2.) * ShdwS * hlp
+        sighh = np.sum(a0 * Ihh_abs**2.) * ShdwS * hlp
+        return  sigvv, sighh
 
     def _i2em_cross(self):
+        print('TODO: CROSS SPECTRUM')
         return None
+
+
+    def _calc_shadowing(self):
+        print('TODO: shadowing')
+        return 1.  ## todo
+
+    def calc_roughness_spectrum(self):
+        # todo
+        print('TODO: roughness spectrum')
+        return np.ones(self.niter)
+
+    def _calc_Ipp(self):
+        Ivv = 1.
+        Ihh = 1.
+        print('TODO Ipp')
+        return Ivv, Ihh
+
+

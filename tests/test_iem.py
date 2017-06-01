@@ -13,14 +13,12 @@ class Test_IEM(unittest.TestCase):
         self.f = 6.
         self.s = 0.01
         self.l = 0.1
-        self.thetas = 0.5
-        self.phis = np.pi
 
     def tearDown(self):
         pass
     
     def test_init(self):
-        O = I2EM(self.f, self.eps, self.s, self.l, self.theta, self.thetas, self.phis)
+        O = I2EM(self.f, self.eps, self.s, self.l, self.theta)
         self.assertEqual(O.eps, self.eps)
         self.assertEqual(O.ks, O.k*O.s)
         self.assertEqual(O.kl, O.k*O.l)
