@@ -165,11 +165,55 @@ class I2EM(SurfaceScatter):
         return np.sum(Ivv), np.sum(Ihh)
 
     def calc_fpp(self):
-        return 1., 1.
+
+        Rvt, Rht = self.calc_reflection_coefficients()
+
+        fvv =  2. * Rvt *(self._s * self._ss - (1. + self._cs * self._css) * self._cfs)/(self._cs + self._css)
+        fhh = -2. * Rht *(self._s * self._ss - (1. + self._cs * self._css) * self._cfs)/(self._cs + self._css)
+        return fvv, fhh
 
 
     def Fppupdn(self):
+        print('TODO: Fpp')
         return 1., 1.
+
+    def calc_reflection_coefficients(self):
+        return 1., 1.
+
+
+class Roughness(object):
+    """
+    calculate roughness spectrum
+    """
+    def __init__(self, **kwargs):
+        self.niter = kwargs.get('niter', None)
+        self.l = kwargs.get('l', None)
+        self.n = np.arange(self.niter)+1
+        self._check()
+
+    def wn(self):
+        assert False, 'Should be implemented in child class!'
+
+    def _check():
+        assert self.niter is not None
+        assert self.l is not None
+
+
+class Gaussian(Roughness):
+    def __init__(self, **kwargs):
+        super(Gaussian, self).__init__(**kwargs)
+    
+    def wn(self):
+        n = self.n
+        wn = np.sum((self.l**2.)/(2.*n) * np.exp(-(wvnb*self.l)**2. / (4.*n)))
+        return wn
+
+
+
+
+
+
+
 
 
 
