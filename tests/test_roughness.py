@@ -15,6 +15,7 @@ class TestRoughness(unittest.TestCase):
 
     def test_gauss(self):
         S = GaussianSpectrum(niter=self.niter, l=self.l)
+        S.wn()
 
 
 
