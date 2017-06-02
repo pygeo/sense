@@ -16,7 +16,7 @@ class Model(object):
         assert self.theta is not None, 'ERROR: no incidence angle was specified!'
 
     def sigma0(self, **kwargs):
-        '''
+        """
         calculate sigma
 
         Parameters
@@ -27,7 +27,7 @@ class Model(object):
             list with polarizations pq
             whereas p=receive, q=transmit
             p,g can be either H or V
-        '''
+        """
 
         self.dB = kwargs.get('dB', False)
         self.pol = kwargs.get('pol', [])
@@ -148,14 +148,15 @@ class Ground(object):
 
 
         # set canopy models
-        if RT_c == 'dummy':
+        if RT_c == 'turbid':  # turbid media (homogenous vegetation)
             print('Still need to implement the canopy model here')
+            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, d=self.C.d, theta=self.theta)
         else:
             assert False, 'Invalid canopy scattering model'
 
     def _check(self, RT_s, RT_c):
         valid_surface = ['Oh92', 'Dubois95']
-        valid_canopy = ['dummy']
+        valid_canopy = ['turbid']
         assert RT_s in valid_surface, 'ERROR: invalid surface scattering model was chosen!'
         assert RT_c in valid_canopy
         assert self.theta is not None
@@ -167,8 +168,8 @@ class Ground(object):
         """
 
         # canopy transmisivities
-        t_h = self.C.t_h
-        t_v = self.C.t_v
+        t_h = self.rt_c.t_h
+        t_v = self.rt_c.t_v
 
         # backscatter
         s_hh = self.rt_s.hh*t_h*t_h
@@ -182,7 +183,7 @@ class Ground(object):
 
 
 
-class CanopyHomo(object):
+class CanopyHomoRT(object):
     """
     homogeneous canopy
     assumes homogeneous vertical distribution of scatterers
