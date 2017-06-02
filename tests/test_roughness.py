@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)) + os.sep + "..")
 
-from sense.surface import GaussianSpectrum
+from sense.surface import GaussianSpectrum, ExponentialSpectrum
 import numpy as np
 
 class TestRoughness(unittest.TestCase):
@@ -21,6 +21,10 @@ class TestRoughness(unittest.TestCase):
 
     def test_gauss(self):
         S = GaussianSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
+        S.wn()
+
+    def test_exp15(self):
+        S = ExponentialSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
         S.wn()
 
 

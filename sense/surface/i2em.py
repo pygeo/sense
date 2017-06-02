@@ -139,12 +139,15 @@ class I2EM(SurfaceScatter):
         """
 
         if acf_type == 'gauss':
+            # gaussian autocorrelation function
             S = GaussianSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq)
+        elif acf_type == 'exp15':
+            # 1.5 power exponential function
+            S = ExponentialSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq)
         else:
             assert False, 'Invalid surface roughness spectrum: ' + str(acf_type)
 
         return S.wn()  # returns wn as an array with length NITER
-
 
     def _calc_Ipp(self):
         n = np.arange(self.niter)+1
@@ -244,7 +247,17 @@ class GaussianSpectrum(Roughness):
         wn = (self.l**2.)/(2.*n) * np.exp(-(self.wvnb*self.l)**2. / (4.*n))
         return wn
 
+class ExponentialSpectrum(Roughness):
+    """
+    1.5 power exponential spectrum
+    """
+    def __init__(self, **kwargs):
+        super(ExponentialSpectrum, self).__init__(**kwargs)
 
+    def wn(self):
+        n = self.n
+        wn= self.l**2. / n**2. * (1.+(self.wvnb*self.l/n)**2.)**(-1.5)
+        return wn
 
 
 
