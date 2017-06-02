@@ -178,7 +178,7 @@ class I2EM(SurfaceScatter):
         Ihh += 0.25*(Fhhups *(self._kz +qs)**(n-1) *np.exp(-self.s**2. *(qs**2. - qs*(self._ksz-self._kz))))
         Ihh += 0.25*(Fhhdns *(self._kz -qs)**(n-1) *np.exp(-self.s**2. *(qs**2. + qs*(self._ksz-self._kz))))
 
-        return np.sum(Ivv), np.sum(Ihh)
+        return Ivv, Ihh
 
     def calc_fpp(self):
 
@@ -224,7 +224,7 @@ class Roughness(object):
         cfs = np.cos(self.phis)
         cf = np.cos(self.phi)
         lam = f2lam(self.freq)
-        self.k = 2*np.pi / lam
+        self.k = 2.*np.pi / lam
         
         # todo whereis this defined ???
         self.wvnb = self.k * np.sqrt( (ss *cfs - s *cf)**2. + (ss * sfs - s * sf)**2. )
