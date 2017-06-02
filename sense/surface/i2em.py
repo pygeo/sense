@@ -13,7 +13,7 @@ from .. util import f2lam
 import math
 
 class I2EM(SurfaceScatter):
-    def __init__(self, f, eps, s, l, theta):
+    def __init__(self, f, eps, s, l, theta, acf_type='gauss'):
         """
         Parameters
         ----------
@@ -27,6 +27,9 @@ class I2EM(SurfaceScatter):
             autocorrelation length [m]
         theta : float
             incidence angle [rad]
+        acf_type : str
+            type of autocorrelation function
+            'gauss' : gaussian type ACF
         """
 
 
@@ -36,6 +39,7 @@ class I2EM(SurfaceScatter):
         self.k = k
         self.s = s
         self.l = l
+        self.acf_type = acf_type
         super(I2EM, self).__init__(eps, k*s, theta, kl=k*l)
         
         # assume backscatter geometry
@@ -103,7 +107,7 @@ class I2EM(SurfaceScatter):
         Ivv, Ihh = self._calc_Ipp()
         Ivv_abs = np.abs(Ivv)
         Ihh_abs = np.abs(Ihh)
-        wn = self.calc_roughness_spectrum() 
+        wn = self.calc_roughness_spectrum(acf_type=self.acf_type) 
 
         # calculate shadowing effects
         ShdwS = self._calc_shadowing()
@@ -128,10 +132,19 @@ class I2EM(SurfaceScatter):
         print('TODO: shadowing')
         return 1.  ## todo
 
-    def calc_roughness_spectrum(self):
-        # todo
-        print('TODO: roughness spectrum')
-        return np.ones(self.niter)
+    def calc_roughness_spectrum(self, acf_type=None):
+        """
+        calculate roughness spectrum
+        Return wn as an array
+        """
+
+        if acf_type == 'gauss':
+            S = GaussianSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq)
+        else:
+            assert False, 'Invalid surface roughness spectrum: ' + str(acf_type)
+
+        return S.wn()  # returns wn as an array with length NITER
+
 
     def _calc_Ipp(self):
         n = np.arange(self.niter)+1
@@ -228,7 +241,7 @@ class GaussianSpectrum(Roughness):
     
     def wn(self):
         n = self.n
-        wn = np.sum((self.l**2.)/(2.*n) * np.exp(-(self.wvnb*self.l)**2. / (4.*n)))
+        wn = (self.l**2.)/(2.*n) * np.exp(-(self.wvnb*self.l)**2. / (4.*n))
         return wn
 
 
