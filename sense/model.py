@@ -95,7 +95,7 @@ class SingleScatRT(Model):
         G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
         s0g = G.sigma()
         # canopy contribution
-        #s0c = self.canopy.sigma()
+        s0c = self.rt_c.sigma_c()
         # total canopy ground contribution
         #s0cgt = self.cground.sigma()
         # ground-canopy-ground interaction
@@ -185,10 +185,12 @@ class Ground(object):
 
 class CanopyHomoRT(object):
     """
-    homogeneous canopy
+    homogeneous canopy RT model
     assumes homogeneous vertical distribution of scatterers
 
     in that case the Lambert Beer law applies
+
+    NOTE that this model is only for BACKSCATTERING GEOMETRY!
     """
     def __init__(self, **kwargs):
         """
@@ -205,15 +207,65 @@ class CanopyHomoRT(object):
         self.ke_v = kwargs.get('ke_v', None)
         self.theta = kwargs.get('theta', None)
         self.d = kwargs.get('d', None)
+        self.Nv = kwargs.get('Nv', None)
+        self.stype = kwargs.get('stype', None)  # scatterer type
+
+        assert self.stype is not None
+        assert self.Nv is not None
 
         self.tau_h = self._tau(self.ke_h)
         self.tau_v = self._tau(self.ke_v)
         self.t_h = np.exp(-self.tau_h)
         self.t_v = np.exp(-self.tau_v)
 
+
+
+        self._set_scat_type()
+        self.sigma_vol = self._calc_back_volume()
+
+    def _set_scat_type(self):
+        """ set scatterer type """
+        if self.stype == 'iso':
+            self.SC = ScatIso()
+        else:
+            assert False
+
+    def _calc_back_volume(self):
+        assert False
+
     def _tau(self, k):
         # assumption: extinction is isotropic
         return k*self.d/np.cos(self.theta)
+
+    def sigma_gcg(self, G_v, G_h):
+        """
+        calculate ground-canopy-ground interactions
+        Eq. 11.16, Ulaby(2014)
+
+        Parameters
+        ----------
+        G_v : float
+            v-polarized coherent Fresnel reflectivity under rough conditions
+            see eq. 11.11 for explanations. As this depends on the
+            surface model used, these should be provided here explicitely
+        G_h : float
+            same as above, but for h-polarization.
+        """
+        return G_v*G_h*(self.t_h*self.t_v-self.t_h**2.*self.t_v**2.)*(self.sigma_vol*np.cos(self.theta))/(self.ke_h+self.ke_v)
+
+
+
+    def sigma_c(self):
+        """
+        calculate canopy volume contribution only
+        Eq. 11.10, Ulaby (2014)
+        """
+        return (1.-self.t_h*self.t_v)*(self.sigma_vol*np.cos(self.theta))/(self.ke_h+self.ke_v)
+
+
+
+
+
 
 
 
