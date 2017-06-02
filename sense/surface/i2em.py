@@ -226,6 +226,7 @@ class Roughness(object):
         lam = f2lam(self.freq)
         self.k = 2*np.pi / lam
         
+        # todo whereis this defined ???
         self.wvnb = self.k * np.sqrt( (ss *cfs - s *cf)**2. + (ss * sfs - s * sf)**2. )
 
     def _check(self):
@@ -243,18 +244,20 @@ class GaussianSpectrum(Roughness):
         super(GaussianSpectrum, self).__init__(**kwargs)
     
     def wn(self):
+        # Fung (1994), Eq. 2B.4; except for wvnb
         n = self.n
         wn = (self.l**2.)/(2.*n) * np.exp(-(self.wvnb*self.l)**2. / (4.*n))
         return wn
 
 class ExponentialSpectrum(Roughness):
     """
-    1.5 power exponential spectrum
+    exponential spectrum
     """
     def __init__(self, **kwargs):
         super(ExponentialSpectrum, self).__init__(**kwargs)
 
     def wn(self):
+        # Fung (1994): eq. 2.B.14
         n = self.n
         wn= self.l**2. / n**2. * (1.+(self.wvnb*self.l/n)**2.)**(-1.5)
         return wn
@@ -264,5 +267,3 @@ class ExponentialSpectrum(Roughness):
 
 
 
-
-TODO add unittests for correctness of roughness spectrum calculations
