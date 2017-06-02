@@ -3,7 +3,8 @@ Basic class for scattering modelling
 """
 
 import numpy as np
-from . surface import Oh92
+from . surface import Oh92, Dubois95
+from . util import f2lam
 
 class Model(object):
     def __init__(self, **kwargs):
@@ -69,6 +70,7 @@ class SingleScatRT(Model):
         self.surface = kwargs.get('surface', None)
         self.canopy = kwargs.get('canopy', None)
         self.models = kwargs.get('models', None)
+        self.freq = kwargs.get('freq', None)
         
         #self.cground = kwargs.get('canopy_ground', None)
         #self.gcg = kwargs.get('ground_canopy_ground', None)
@@ -78,6 +80,7 @@ class SingleScatRT(Model):
         assert self.surface is not None
         assert self.canopy is not None
         assert self.models is not None
+        assert self.freq is not None
 
         for k in ['surface', 'canopy']:
             assert k in self.models.keys()  # check that all models have been specified
@@ -89,7 +92,7 @@ class SingleScatRT(Model):
         """
 
         # ground backscatter = attenuated surface
-        G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta)
+        G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
         s0g = G.sigma()
         # canopy contribution
         #s0c = self.canopy.sigma()
@@ -108,7 +111,7 @@ class Ground(object):
     sigma_pq
     where p is receive and q is transmit polarization
     """
-    def __init__(self, S, C, RT_s, RT_c, theta=None):
+    def __init__(self, S, C, RT_s, RT_c, theta=None, freq=None):
         """
         calculate the attenuated ground contribution
         to the scattering
@@ -123,19 +126,25 @@ class Ground(object):
             key describing the surface scattering model
         RT_c : str
             key specifying the canopy scattering model
+        freq : float
+            frequency[GHz]
         """
         self.S = S
         self.C = C
         self.theta = theta
         self._check(RT_s, RT_c)
+        self.freq = freq
+        assert self.freq is not None, 'Frequency needsto be provided'
         self._set_models(RT_s, RT_c)
 
     def _set_models(self, RT_s, RT_c):
         # set surface model
         if RT_s == 'Oh92':
             self.rt_s = Oh92(self.S.eps, self.S.ks, self.theta)
+        elif RT_s == 'Dubois95':
+            self.rt_s = Dubois95(self.S.eps, self.S.ks, self.theta, lam=f2lam(self.freq))
         else:
-            assert False
+            assert False, 'Unknown surface scattering model'
 
 
         # set canopy models
@@ -145,7 +154,7 @@ class Ground(object):
             assert False, 'Invalid canopy scattering model'
 
     def _check(self, RT_s, RT_c):
-        valid_surface = ['Oh92']
+        valid_surface = ['Oh92', 'Dubois95']
         valid_canopy = ['dummy']
         assert RT_s in valid_surface, 'ERROR: invalid surface scattering model was chosen!'
         assert RT_c in valid_canopy
@@ -164,7 +173,10 @@ class Ground(object):
         # backscatter
         s_hh = self.rt_s.hh*t_h*t_h
         s_vv = self.rt_s.vv*t_v*t_v
-        s_hv = self.rt_s.hv*t_v*t_h
+        if self.rt_s.hv is None:
+            s_hv = None
+        else:
+            s_hv = self.rt_s.hv*t_v*t_h
 
         return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
 
