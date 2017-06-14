@@ -2,7 +2,7 @@
 implements the I2EM model (see Ulaby (2014), Chapter 10
 backscattering model for single scale random surfaces
 """
-from scatter import SurfaceScatter
+from . scatter import SurfaceScatter
 import numpy as np
 
 class I2EM(SurfaceScatter):
