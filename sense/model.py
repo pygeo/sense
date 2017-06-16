@@ -248,7 +248,7 @@ class CanopyHomoRT(object):
     def _set_scat_type(self):
         """ set scatterer type """
         if self.stype == 'iso':
-            self.SC = ScatIso(sigma_s_h=self.ks_h/self.Nv, sigma_s_v=self.ks_v/self.Nv)
+            self.SC = ScatIso(sigma_s_hh=self.ks_h/self.Nv, sigma_s_vv=self.ks_v/self.Nv, sigma_s_hv=self.ks_v/self.Nv)   # note that the cross pol scatt. coeff. is the same as the copol due to isotropic behavior
         elif self.stype == 'rayleigh':
             self.SC = ScatRayleigh()
         elif self.stype == 'cloud':

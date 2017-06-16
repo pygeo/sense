@@ -30,7 +30,7 @@ class TestSingle(unittest.TestCase):
         models = {'surface': 'Oh92', 'canopy': stype}
         eps = 5. -3.j
         soil = Soil(eps=eps, f=5., s=0.02)
-        can = OneLayer(ke_h=0.05, ke_v=0.02, d=3., ks_h = 0.02, ks_v = 0.003)
+        can = OneLayer(ke_h=0.05, ke_v=0.05, d=3., ks_h = 0.02, ks_v = 0.02)
         S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=self.theta, freq=self.freq)
         S.sigma0()
 
@@ -40,7 +40,7 @@ class TestSingle(unittest.TestCase):
         S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=self.theta, freq=self.freq)
         S.sigma0()
 
-
+    @unittest.skip("skipping Rayleight so far")
     def test_scat_rayleigh(self):
 
         stype = 'turbid_rayleigh'
