@@ -22,4 +22,8 @@ class OneLayer(Canopy):
         self.ke_v = kwargs.get('ke_v', None)
         assert self.ke_h is not None
         assert self.ke_v is not None
+        self.ks_h = kwargs.get('ks_h', None)
+        self.ks_v = kwargs.get('ks_v', None)
+        assert self.ks_h is not None
+        assert self.ks_v is not None
 

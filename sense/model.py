@@ -154,10 +154,9 @@ class Ground(object):
 
         # set canopy models
         if RT_c == 'turbid_isotropic':  # turbid media (homogenous vegetation)
-            print('Still need to implement the canopy model here')
-            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, d=self.C.d, theta=self.theta, stype='iso')
+            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, ks_h=self.C.ks_h, ks_v=self.C.ks_v, d=self.C.d, theta=self.theta, stype='iso')
         elif RT_c == 'turbid_rayleigh':
-            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, d=self.C.d, theta=self.theta, stype='rayleigh')
+            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, ks_h=self.C.ks_h, ks_v=self.C.ks_v, d=self.C.d, theta=self.theta, stype='rayleigh')
         else:
             assert False, 'Invalid canopy scattering model: ' + RT_c
 
@@ -242,6 +241,10 @@ class CanopyHomoRT(object):
         assert self.ks_h >=0.
         assert self.ks_v >=0.
 
+
+        assert self.ks_h <= self.ke_h
+        assert self.ks_v <= self.ke_v
+
     def _set_scat_type(self):
         """ set scatterer type """
         if self.stype == 'iso':
@@ -293,7 +296,7 @@ class CanopyHomoRT(object):
         s_vv = (1.-self.t_v*self.t_v)*(self.sigma_vol_back['vv']*np.cos(self.theta))/(self.ke_v+self.ke_v)
         s_hv = (1.-self.t_h*self.t_v)*(self.sigma_vol_back['hv']*np.cos(self.theta))/(self.ke_h+self.ke_v)
 
-        return {'hh', s_hh, 'vv' : s_vv, 'hv' : s_hv} 
+        return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv} 
 
 
 # 502-503
