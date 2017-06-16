@@ -94,14 +94,18 @@ class SingleScatRT(Model):
 
         # ground backscatter = attenuated surface
         G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
-        s0g = G.sigma()
+        s0g = G.sigma()  # returns dictionary with different components
+        
         # canopy contribution
-        s0c = G.rt_c.sigma_c()
+        s0c = G.rt_c.sigma_c()   # returns a dictionary
+
         # total canopy ground contribution
         #s0cgt = self.cground.sigma()
         # ground-canopy-ground interaction
         #s0gcg = self.gcg.sigma()
 
+
+        # TODO combine results in different dictionaries here
         return None #s0g + s0c + s0cgt + s0gcg
 
 
@@ -208,11 +212,14 @@ class CanopyHomoRT(object):
         """
         self.ke_h = kwargs.get('ke_h', None)
         self.ke_v = kwargs.get('ke_v', None)
+        self.ks_h = kwargs.get('ks_h', None)
+        self.ks_v = kwargs.get('ks_v', None)
         self.theta = kwargs.get('theta', None)
         self.d = kwargs.get('d', None)
+        self.Nv = kwargs.get('Nv', 1.)
         self.stype = kwargs.get('stype', None)  # scatterer type
 
-        assert self.stype is not None
+        self._check()
 
         self.tau_h = self._tau(self.ke_h)
         self.tau_v = self._tau(self.ke_v)
@@ -220,19 +227,39 @@ class CanopyHomoRT(object):
         self.t_v = np.exp(-self.tau_v)
 
         self._set_scat_type()
-        self.sigma_vol = self._calc_back_volume()
+        self.sigma_vol_back = self._calc_back_volume()
+
+    def _check(self):
+        assert self.stype is not None
+        
+        assert self.ke_h is not None
+        assert self.ke_v is not None
+        assert self.ks_h is not None
+        assert self.ks_v is not None
+
+        assert self.ke_h >=0.
+        assert self.ke_v >=0.
+        assert self.ks_h >=0.
+        assert self.ks_v >=0.
 
     def _set_scat_type(self):
         """ set scatterer type """
         if self.stype == 'iso':
-            self.SC = ScatIso()
+            self.SC = ScatIso(sigma_s_h=self.ks_h/self.Nv, sigma_s_v=self.ks_v/self.Nv)
         elif self.stype == 'rayleigh':
             self.SC = ScatRayleigh()
+        elif self.stype == 'cloud':
+            assert False  # here implemenatation of 11.5 then
         else:
             assert False, 'Invalid scatterer type specified: ' + self.stype
 
     def _calc_back_volume(self):
-        return -99999999. 
+        """
+        calculate the volume backscattering coefficient sigma_v
+        This is a function of the scatterer type chosen (e.g. isotropic,
+        rayleigh, cloud model, ...)
+        """
+        return self.SC.sigma_v_back(self.Nv)
 
     def _tau(self, k):
         # assumption: extinction is isotropic
@@ -259,15 +286,14 @@ class CanopyHomoRT(object):
     def sigma_c(self):
         """
         calculate canopy volume contribution only
-        Eq. 11.10, Ulaby (2014)
+        Eq. 11.10 + 11.16 as seen in 11.17, Ulaby (2014)
         """
-        return (1.-self.t_h*self.t_v)*(self.sigma_vol*np.cos(self.theta))/(self.ke_h+self.ke_v)
 
+        s_hh = (1.-self.t_h*self.t_h)*(self.sigma_vol_back['hh']*np.cos(self.theta))/(self.ke_h+self.ke_h)
+        s_vv = (1.-self.t_v*self.t_v)*(self.sigma_vol_back['vv']*np.cos(self.theta))/(self.ke_v+self.ke_v)
+        s_hv = (1.-self.t_h*self.t_v)*(self.sigma_vol_back['hv']*np.cos(self.theta))/(self.ke_h+self.ke_v)
 
-
-
-
-
+        return {'hh', s_hh, 'vv' : s_vv, 'hv' : s_hv} 
 
 
 # 502-503

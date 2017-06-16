@@ -19,18 +19,21 @@ class TestOh92(unittest.TestCase):
 
         stype='iso'
 
+        ks_v = 1.
+        ks_h = 0.
+
         ke_h = 2.
         ke_v = 3.
         theta = 0.5
         d = 0.
-        C = CanopyHomoRT(ke_h=ke_h, ke_v=ke_v, d=d, theta=theta, stype=stype)
+        C = CanopyHomoRT(ke_h=ke_h, ke_v=ke_v, ks_h=ks_h, ks_v=ks_v, d=d, theta=theta, stype=stype)
         self.assertEqual(C.t_v, 1.)
         self.assertEqual(C.t_h, 1.)
 
         d = 1.
         ke_h = 0.
         ke_v = 0.
-        C = CanopyHomoRT(ke_h=ke_h, ke_v=ke_v, d=d, theta=theta, stype=stype)
+        C = CanopyHomoRT(ke_h=ke_h, ke_v=ke_v, ks_v=ks_v, ks_h=ks_h, d=d, theta=theta, stype=stype)
         self.assertEqual(C.t_v, 1.)
         self.assertEqual(C.t_h, 1.)
 
@@ -38,7 +41,7 @@ class TestOh92(unittest.TestCase):
         theta = np.deg2rad(60.)
         ke_h = 1.
         ke_v = 2.
-        C = CanopyHomoRT(ke_h=ke_h, ke_v=ke_v, d=d, theta=theta, stype=stype)
+        C = CanopyHomoRT(ke_h=ke_h, ke_v=ke_v, ks_v=ks_v, ks_h=ks_h, d=d, theta=theta, stype=stype)
         self.assertAlmostEqual(C.t_v, np.exp(-4.))
         self.assertAlmostEqual(C.t_h, np.exp(-2.))
 
