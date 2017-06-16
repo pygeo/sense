@@ -5,7 +5,7 @@ Basic class for scattering modelling
 import numpy as np
 from . surface import Oh92, Dubois95
 from . util import f2lam
-from . scatterer import ScatIso
+from . scatterer import ScatIso, ScatRayleigh
 
 class Model(object):
     def __init__(self, **kwargs):
@@ -226,8 +226,10 @@ class CanopyHomoRT(object):
         """ set scatterer type """
         if self.stype == 'iso':
             self.SC = ScatIso()
+        elif self.stype == 'rayleigh':
+            self.SC = ScatRayleigh()
         else:
-            assert False
+            assert False, 'Invalid scatterer type specified: ' + self.stype
 
     def _calc_back_volume(self):
         return -99999999. 
