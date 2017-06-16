@@ -24,7 +24,7 @@ class TestSingle(unittest.TestCase):
 
     def test_scat(self):
         # some dummy variables
-        models = {'surface': 'Oh92', 'canopy':'turbid'}
+        models = {'surface': 'Oh92', 'canopy':'turbid_isotropic'}
         eps = 5. -3.j
         soil = Soil(eps=eps, f=5., s=0.02)
         can = OneLayer(ke_h=0.05, ke_v=0.02, d=3.)

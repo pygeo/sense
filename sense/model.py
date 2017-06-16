@@ -5,6 +5,7 @@ Basic class for scattering modelling
 import numpy as np
 from . surface import Oh92, Dubois95
 from . util import f2lam
+from . scatterer import ScatIso
 
 class Model(object):
     def __init__(self, **kwargs):
@@ -148,17 +149,19 @@ class Ground(object):
 
 
         # set canopy models
-        if RT_c == 'turbid':  # turbid media (homogenous vegetation)
+        if RT_c == 'turbid_isotropic':  # turbid media (homogenous vegetation)
             print('Still need to implement the canopy model here')
-            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, d=self.C.d, theta=self.theta)
+            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, d=self.C.d, theta=self.theta, stype='iso')
+        elif RT_c == 'turbid_rayleigh':
+            self.rt_c = CanopyHomoRT(ke_h=self.C.ke_h, ke_v=self.C.ke_v, d=self.C.d, theta=self.theta, stype='rayleigh')
         else:
-            assert False, 'Invalid canopy scattering model'
+            assert False, 'Invalid canopy scattering model: ' + RT_c
 
     def _check(self, RT_s, RT_c):
         valid_surface = ['Oh92', 'Dubois95']
-        valid_canopy = ['turbid']
+        valid_canopy = ['turbid_rayleigh', 'turbid_isotropic']
         assert RT_s in valid_surface, 'ERROR: invalid surface scattering model was chosen!'
-        assert RT_c in valid_canopy
+        assert RT_c in valid_canopy, 'ERROR: invalid canopy model: ' + RT_c
         assert self.theta is not None
 
     def sigma(self):
@@ -207,18 +210,14 @@ class CanopyHomoRT(object):
         self.ke_v = kwargs.get('ke_v', None)
         self.theta = kwargs.get('theta', None)
         self.d = kwargs.get('d', None)
-        self.Nv = kwargs.get('Nv', None)
         self.stype = kwargs.get('stype', None)  # scatterer type
 
         assert self.stype is not None
-        assert self.Nv is not None
 
         self.tau_h = self._tau(self.ke_h)
         self.tau_v = self._tau(self.ke_v)
         self.t_h = np.exp(-self.tau_h)
         self.t_v = np.exp(-self.tau_v)
-
-
 
         self._set_scat_type()
         self.sigma_vol = self._calc_back_volume()
@@ -231,7 +230,7 @@ class CanopyHomoRT(object):
             assert False
 
     def _calc_back_volume(self):
-        assert False
+        return -99999999. 
 
     def _tau(self, k):
         # assumption: extinction is isotropic
