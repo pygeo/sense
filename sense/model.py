@@ -96,7 +96,7 @@ class SingleScatRT(Model):
         G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
         s0g = G.sigma()
         # canopy contribution
-        s0c = self.rt_c.sigma_c()
+        s0c = G.rt_c.sigma_c()
         # total canopy ground contribution
         #s0cgt = self.cground.sigma()
         # ground-canopy-ground interaction

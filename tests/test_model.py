@@ -33,7 +33,7 @@ class TestSingle(unittest.TestCase):
 
 
 
-        models = {'surface': 'Dubois95', 'canopy':'turbid'}
+        models = {'surface': 'Dubois95', 'canopy':'turbid_isotropic'}
         eps = 5. -3.j
 
         S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=self.theta, freq=self.freq)
