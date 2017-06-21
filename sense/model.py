@@ -94,20 +94,31 @@ class SingleScatRT(Model):
 
         # ground backscatter = attenuated surface
         G = Ground(self.surface, self.canopy, self.models['surface'], self.models['canopy'], theta=self.theta, freq=self.freq)
-        s0g = G.sigma()  # returns dictionary with different components
+        self.s0g = G.sigma()  # returns dictionary with different components
         
         # canopy contribution
-        s0c = G.rt_c.sigma_c()   # returns a dictionary
+        self.s0c = G.rt_c.sigma_c()   # returns a dictionary
 
         # total canopy ground contribution
         #s0cgt = self.cground.sigma()
         # ground-canopy-ground interaction
         #s0gcg = self.gcg.sigma()
 
+        # combine backscatter values
+        stot = {}
+        for k in ['hh', 'vv', 'hv']:
+            stot.update({k : self._combine(k)})
 
-        # TODO combine results in different dictionaries here
-        return None #s0g + s0c + s0cgt + s0gcg
+        return stot 
 
+    def _combine(self, k):
+
+        """ combine previous calculated backscatter values """
+        if self.s0g[k] is None:
+            return None
+        if self.s0c[k] is None:
+            return None
+        return self.s0g[k] + self.s0c[k] #+ s0cgt + s0cgc
 
 
 class Ground(object):
