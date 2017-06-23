@@ -251,6 +251,10 @@ class Ground(object):
         # backscatter
         s_hh = self.rt_s.hh*t_h*t_h
         s_vv = self.rt_s.vv*t_v*t_v
+
+        print 'SOIL VV: ', self.rt_s.vv[0]
+        print 'TRABS VV: ', t_v[0]
+
         if self.rt_s.hv is None:
             s_hv = None
         else:
