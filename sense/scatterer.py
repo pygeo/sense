@@ -48,7 +48,6 @@ class ScatRayleigh(Scatterer):
         super(ScatRayleigh, self).__init__(**kwargs)
 
     def sigma_v_back(self, Nv):
-        print 'Nv: ', Nv
         return {'hh' : 1.5*Nv*self.sigma_s_hh, 'vv' : 1.5*Nv*self.sigma_s_vv, 'hv' : 1.5*Nv*self.sigma_s_hv}
 
     def sigma_v_bist(self, Nv):
