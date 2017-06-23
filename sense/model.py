@@ -75,8 +75,6 @@ class SingleScatRT(Model):
         self.freq = kwargs.get('freq', None)
         self.coherent = kwargs.get('coherent', True)  # use coherent simulations as default
         
-        #self.cground = kwargs.get('canopy_ground', None)
-        #self.gcg = kwargs.get('ground_canopy_ground', None)
         self._check()
 
     def _check(self):
@@ -105,7 +103,7 @@ class SingleScatRT(Model):
         self.s0cgt = G.sigma_c_g(self.coherent)
 
         # ground-canopy-ground interaction
-        #s0gcg = self.gcg.sigma()
+        self.s0gcg = G.sigma_g_c_g()
 
         # combine backscatter values
         stot = {}
@@ -121,7 +119,7 @@ class SingleScatRT(Model):
             return None
         if self.s0c[k] is None:
             return None
-        return self.s0g[k] + self.s0c[k] + self.s0cgt[k] #+ s0cgc
+        return self.s0g[k] + self.s0c[k] + self.s0cgt[k] + self.s0gcg[k]
 
 
 class Ground(object):
@@ -203,6 +201,15 @@ class Ground(object):
         assert RT_c in valid_canopy, 'ERROR: invalid canopy model: ' + RT_c
         assert self.theta is not None
 
+    def sigma_g_c_g(self):
+
+
+        s_vv = self.rt_c.sigma_vol_back['vv']*np.cos(self.theta)*self.rho_v*self.rho_v*(self.rt_c.t_v*self.rt_c.t_v-self.rt_c.t_v**4.) / (self.C.ke_v + self.C.ke_v)
+        s_hh = self.rt_c.sigma_vol_back['hh']*np.cos(self.theta)*self.rho_h*self.rho_h*(self.rt_c.t_h*self.rt_c.t_h-self.rt_c.t_h**4.) / (self.C.ke_h + self.C.ke_h)
+        s_hv = self.rt_c.sigma_vol_back['hv']*np.cos(self.theta)*self.rho_h*self.rho_v*(self.rt_c.t_h*self.rt_c.t_v-self.rt_c.t_h**2.*self.rt_c.t_v**2.) / (self.C.ke_h + self.C.ke_v)
+
+        return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
+
 
     def sigma_c_g(self, coherent=None):
         """
@@ -227,8 +234,8 @@ class Ground(object):
         s_hh = n  * self.rt_c.sigma_vol_bistatic['hh'] * self.C.d *(self.rho_h + self.rho_h)*self.rt_c.t_h*self.rt_c.t_h
         s_hv = 1. * self.rt_c.sigma_vol_bistatic['hv'] * self.C.d *(self.rho_v + self.rho_h)*self.rt_c.t_h*self.rt_c.t_v
 
-        return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
 
+        return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
 
 
 
