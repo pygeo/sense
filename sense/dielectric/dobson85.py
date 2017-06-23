@@ -32,7 +32,7 @@ class Dobson85(EpsModel):
         hlp = self.f/f0
         e1 = 4.9 + (74.1)/(1.+hlp**2.)
         e2 =(74.1*hlp)/(1.+hlp**2.) + 6.46 * self.sigma/self.f 
-        return complex(e1, e2)
+        return e1 + 1.j * e2
 
     def _debye(self):
         assert False

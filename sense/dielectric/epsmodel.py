@@ -2,6 +2,8 @@
 Generic model for dielectric mixing models
 """
 
+import numpy as np
+
 class EpsModel(object):
     def __init__(self, **kwargs):
         """
@@ -39,4 +41,7 @@ class EpsModel(object):
         assert self.sand <=1.
         assert self.mv is not None, 'volumetric soil moisture needs to be given'
         assert self.f is not None, 'Frequency needs to be given!'
-        assert self.f > 0.
+        if isinstance(self.f, np.ndarray):
+            assert np.all(self.f> 0.)
+        else:
+            assert self.f > 0.
