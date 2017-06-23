@@ -6,6 +6,7 @@ import numpy as np
 from . surface import Oh92, Dubois95
 from . util import f2lam
 from . scatterer import ScatIso, ScatRayleigh
+from . core import Reflectivity
 
 class Model(object):
     def __init__(self, **kwargs):
@@ -72,6 +73,7 @@ class SingleScatRT(Model):
         self.canopy = kwargs.get('canopy', None)
         self.models = kwargs.get('models', None)
         self.freq = kwargs.get('freq', None)
+        self.coherent = kwargs.get('coherent', True)  # use coherent simulations as default
         
         #self.cground = kwargs.get('canopy_ground', None)
         #self.gcg = kwargs.get('ground_canopy_ground', None)
@@ -100,7 +102,8 @@ class SingleScatRT(Model):
         self.s0c = G.rt_c.sigma_c()   # returns a dictionary
 
         # total canopy ground contribution
-        #s0cgt = self.cground.sigma()
+        self.s0cgt = G.sigma_c_g(self.coherent)
+
         # ground-canopy-ground interaction
         #s0gcg = self.gcg.sigma()
 
@@ -108,17 +111,17 @@ class SingleScatRT(Model):
         stot = {}
         for k in ['hh', 'vv', 'hv']:
             stot.update({k : self._combine(k)})
-
         return stot 
 
     def _combine(self, k):
-
-        """ combine previous calculated backscatter values """
+        """
+        combine previous calculated backscatter values
+        """
         if self.s0g[k] is None:
             return None
         if self.s0c[k] is None:
             return None
-        return self.s0g[k] + self.s0c[k] #+ s0cgt + s0cgc
+        return self.s0g[k] + self.s0c[k] + self.s0cgt[k] #+ s0cgc
 
 
 class Ground(object):
@@ -152,6 +155,28 @@ class Ground(object):
         self.freq = freq
         assert self.freq is not None, 'Frequency needsto be provided'
         self._set_models(RT_s, RT_c)
+        self._calc_rho()
+
+    def _calc_rho(self):
+        """
+        calculate coherent p-polarized
+        reflectivity
+        Ref: Eq. 11.11 (Ulaby, 2014)
+
+        Note that the specular reflectivity is corrected by a roughness term
+        if ks>0.2
+
+        however, a sensitivity analysis showed that even for ks==0.2
+        deviations can be up to 15% for typical incidence angles
+        Only in case that ks << 0.1, the correction can be neglected.
+        We therefore always use the roughness correction factor!
+
+        TODO: unclear so far how this relates to surface (soil) scattering models
+        """
+
+        R = Reflectivity(self.S.eps, self.theta)
+        self.rho_v = R.v * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
+        self.rho_h = R.h * np.exp(-4.*np.cos(self.theta)**2.*(self.S.ks**2.))
 
     def _set_models(self, RT_s, RT_c):
         # set surface model
@@ -178,6 +203,35 @@ class Ground(object):
         assert RT_c in valid_canopy, 'ERROR: invalid canopy model: ' + RT_c
         assert self.theta is not None
 
+
+    def sigma_c_g(self, coherent=None):
+        """
+        calculate canopy ground scattering coefficient
+        This is based on Eq. 11.17 (last term) in Ulaby (2014)
+        and 11.14 in Ulaby (2014)
+
+        for co-pol, coherent addition can be made as an option
+
+        Parameters
+        ----------
+        coherent : bool
+            do coherent calculation for co-pol calculations
+        """
+        assert coherent is not None, 'ERROR: please specify explicity if coherent calculations should be made.'
+        if coherent:
+            n = 2.
+        else:
+            n = 1.
+
+        s_vv = n  * self.rt_c.sigma_vol_bistatic['vv'] * self.C.d *(self.rho_v + self.rho_v)*self.rt_c.t_v*self.rt_c.t_v
+        s_hh = n  * self.rt_c.sigma_vol_bistatic['hh'] * self.C.d *(self.rho_h + self.rho_h)*self.rt_c.t_h*self.rt_c.t_h
+        s_hv = 1. * self.rt_c.sigma_vol_bistatic['hv'] * self.C.d *(self.rho_v + self.rho_h)*self.rt_c.t_h*self.rt_c.t_v
+
+        return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
+
+
+
+
     def sigma(self):
         """
         calculate the backscattering coefficient
@@ -196,8 +250,8 @@ class Ground(object):
         else:
             s_hv = self.rt_s.hv*t_v*t_h
 
-        return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
 
+        return {'vv' : s_vv, 'hh' : s_hh, 'hv' : s_hv}
 
 
 class CanopyHomoRT(object):
@@ -238,6 +292,7 @@ class CanopyHomoRT(object):
 
         self._set_scat_type()
         self.sigma_vol_back = self._calc_back_volume()
+        self.sigma_vol_bistatic = self._calc_sigma_bistatic()
 
     def _check(self):
         assert self.stype is not None
@@ -274,6 +329,16 @@ class CanopyHomoRT(object):
         rayleigh, cloud model, ...)
         """
         return self.SC.sigma_v_back(self.Nv)
+
+    def _calc_sigma_bistatic(self):
+        """
+        calculate volume bistatic scattering coefficient
+        of scatterer
+        """
+        return self.SC.sigma_v_bist(self.Nv)
+
+
+
 
     def _tau(self, k):
         # assumption: extinction is isotropic

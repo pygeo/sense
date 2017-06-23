@@ -33,6 +33,11 @@ class ScatIso(Scatterer):
         """
         return {'hh' : Nv*self.sigma_s_hh, 'vv' : Nv*self.sigma_s_vv, 'hv' : Nv*self.sigma_s_hv}
 
+    def sigma_v_bist(self, Nv):
+        # same as volume backscattering coefficient (Eq. 11.19)
+        return self.sigma_v_back(Nv)
+
+
 
 class ScatRayleigh(Scatterer):
     """
@@ -43,4 +48,9 @@ class ScatRayleigh(Scatterer):
         super(ScatRayleigh, self).__init__(**kwargs)
 
     def sigma_v_back(self, Nv):
+        # todo still needs implementation
         return {'hh' : -9999., 'vv' : -999999., 'hv' : -99999.}
+
+    def sigma_v_bist(self, Nv):
+        # same as sigma_v_back (Eq. 11.22)
+        return self.sigma_v_back(Nv)
