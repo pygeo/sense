@@ -106,10 +106,9 @@ class SingleScatRT(Model):
         self.s0gcg = G.sigma_g_c_g()
 
         # combine backscatter values
-        stot = {}
+        self.stot = {}
         for k in ['hh', 'vv', 'hv']:
-            stot.update({k : self._combine(k)})
-        return stot 
+            self.stot.update({k : self._combine(k)})
 
     def _combine(self, k):
         """
@@ -323,7 +322,7 @@ class CanopyHomoRT(object):
         if self.stype == 'iso':
             self.SC = ScatIso(sigma_s_hh=self.ks_h/self.Nv, sigma_s_vv=self.ks_v/self.Nv, sigma_s_hv=self.ks_v/self.Nv)   # note that the cross pol scatt. coeff. is the same as the copol due to isotropic behavior
         elif self.stype == 'rayleigh':
-            self.SC = ScatRayleigh()
+            self.SC = ScatRayleigh(sigma_s_hh = 1.5*self.ks_h/self.Nv, sigma_s_vv=1.5*self.ks_v/self.Nv, sigma_s_hv=1.5*self.ks_v/self.Nv)  # eq. 11.22
         elif self.stype == 'cloud':
             assert False  # here implemenatation of 11.5 then
         else:

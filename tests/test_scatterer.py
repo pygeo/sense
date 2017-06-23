@@ -27,5 +27,37 @@ class TestSingle(unittest.TestCase):
         self.assertTrue(isinstance(r, dict))
         self.assertEqual(len(r), 3)
 
+    def test_rayleigh_v_back(self):
+
+        Nv = 5.
+        k_s = 2.
+        
+        sigma_s_pp = k_s/Nv
+
+        S = ScatRayleigh(sigma_s_hh = sigma_s_pp, sigma_s_vv = sigma_s_pp, sigma_s_hv = sigma_s_pp)
+        s_v = S.sigma_v_back(Nv)
+        s_b = S.sigma_v_bist(Nv)
+
+        for k in s_v.keys():
+            self.assertEqual(s_v[k], s_b[k])
+            self.assertEqual(s_v[k], 1.5*k_s)
+
+    def test_iso_v_back(self):
+
+
+        Nv = 7.
+        k_s = 2.
+        sigma_s_pp = k_s/Nv
+
+        S = ScatIso(sigma_s_hh=sigma_s_pp, sigma_s_vv=sigma_s_pp, sigma_s_hv=sigma_s_pp)
+        s_v = S.sigma_v_back(Nv)
+        s_b = S.sigma_v_bist(Nv)
+
+        for k in s_v.keys():
+            self.assertEqual(s_v[k], s_b[k])
+            self.assertEqual(s_v[k], k_s)
+
+
+
 if __name__ == '__main__':
     unittest.main()
