@@ -55,7 +55,6 @@ class ScatRayleigh(Scatterer):
     def sigma_v_back(self):
         # sigma_s_pp is assumed to correspond to volume extinction coefficient
 
-        print 'KS in routine: ', self.sigma_s_hh, 1.5*self.sigma_s_hh
         return {'hh' : 1.5*self.sigma_s_hh, 'vv' : 1.5*self.sigma_s_vv, 'hv' : 1.5*self.sigma_s_hv}
 
     def sigma_v_bist(self):

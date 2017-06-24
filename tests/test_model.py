@@ -55,8 +55,8 @@ class TestSingle(unittest.TestCase):
 
         stype = 'turbid_rayleigh'
         models = {'surface': 'Oh92', 'canopy': stype}
-        eps = 5. -3.j
-        d = 1
+        eps = 15. -3.j
+        d = 2.
         ke = 0.05
         omega=0.5
         soil = Soil(eps=eps, f=5., s=0.02)
@@ -65,7 +65,6 @@ class TestSingle(unittest.TestCase):
         S.sigma0()
 
         models = {'surface': 'Dubois95', 'canopy': stype}
-        eps = 5. -3.j
         S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta, freq=self.freq)
         S.sigma0()
 
@@ -97,14 +96,14 @@ class TestSingle(unittest.TestCase):
                 self.assertAlmostEqual(S.s0c[pol][i]+S.s0gcg[pol][i], 0.75*omega*np.cos(theta[i])*(1.-trans[i]**2.)*(1.+RHO_h[i]**2.*trans[i]**2.))
 
                 # gcg
-                #self.assertAlmostEqual(S.s0gcg[pol][i], 2.*2.*omega*ke*d*RHO_h[i]*trans[i]**2.)
+                xx=3.*n*omega*ke*d*RHO_h[i]*trans[i]**2.
+                print np.rad2deg(theta[i]), S.s0gcg[pol][i],xx, S.s0gcg[pol][i]/xx
+                self.assertAlmostEqual(S.s0cgt[pol][i],xx) 
 
 
-                #db1=db(ref_hh[i])
-                #db2=db(S.stot[pol][i])
-                #print db1, db2, db1-db2
-                #self.AlmostEqual(db1,db2,5)
-        #self.assertEqual(ref_vv, res['vv'])
+                db1=db(ref_hh[i])
+                db2=db(S.stot[pol][i])
+                self.assertAlmostEqual(db1,db2)
 
         pol = 'vv'
         self.assertEqual(len(ref_vv), len(S.stot[pol]))
