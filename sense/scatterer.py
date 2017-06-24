@@ -25,17 +25,19 @@ class ScatIso(Scatterer):
         assert self.sigma_s_hh == self.sigma_s_vv
         assert self.sigma_s_hh == self.sigma_s_hv
 
-    def sigma_v_back(self, Nv):
+    def sigma_v_back(self):
         """
         volume backscattering coefficient
         for the isotropic case this corresponds to the
         volume scattering coefficient ks
-        """
-        return {'hh' : Nv*self.sigma_s_hh, 'vv' : Nv*self.sigma_s_vv, 'hv' : Nv*self.sigma_s_hv}
 
-    def sigma_v_bist(self, Nv):
+        not that this is NOT the scattering cross section of a single particle!
+        """
+        return {'hh' : self.sigma_s_hh, 'vv' : self.sigma_s_vv, 'hv' : self.sigma_s_hv}
+
+    def sigma_v_bist(self):
         # same as volume backscattering coefficient (Eq. 11.19)
-        return self.sigma_v_back(Nv)
+        return self.sigma_v_back()
 
 
 
@@ -47,9 +49,9 @@ class ScatRayleigh(Scatterer):
     def __init__(self, **kwargs):
         super(ScatRayleigh, self).__init__(**kwargs)
 
-    def sigma_v_back(self, Nv):
-        return {'hh' : 1.5*Nv*self.sigma_s_hh, 'vv' : 1.5*Nv*self.sigma_s_vv, 'hv' : 1.5*Nv*self.sigma_s_hv}
+    def sigma_v_back(self):
+        return {'hh' : 1.5*self.sigma_s_hh, 'vv' : 1.5*self.sigma_s_vv, 'hv' : 1.5*self.sigma_s_hv}
 
-    def sigma_v_bist(self, Nv):
+    def sigma_v_bist(self):
         # same as sigma_v_back (Eq. 11.22)
-        return self.sigma_v_back(Nv)
+        return self.sigma_v_back()

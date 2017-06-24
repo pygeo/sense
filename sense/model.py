@@ -118,7 +118,7 @@ class SingleScatRT(Model):
             return None
         if self.s0c[k] is None:
             return None
-        return self.s0g[k] + self.s0c[k] + self.s0cgt[k] + self.s0gcg[k]
+        return self.s0g[k] + self.s0c[k] + self.s0gcg[k] + self.s0cgt[k]
 
 
 class Ground(object):
@@ -252,9 +252,6 @@ class Ground(object):
         s_hh = self.rt_s.hh*t_h*t_h
         s_vv = self.rt_s.vv*t_v*t_v
 
-        print 'SOIL VV: ', self.rt_s.vv[0]
-        print 'TRABS VV: ', t_v[0]
-
         if self.rt_s.hv is None:
             s_hv = None
         else:
@@ -290,7 +287,7 @@ class CanopyHomoRT(object):
         self.ks_v = kwargs.get('ks_v', None)
         self.theta = kwargs.get('theta', None)
         self.d = kwargs.get('d', None)
-        self.Nv = kwargs.get('Nv', 1.)
+        #self.Nv = kwargs.get('Nv', 1.)
         self.stype = kwargs.get('stype', None)  # scatterer type
 
         self._check()
@@ -324,9 +321,9 @@ class CanopyHomoRT(object):
     def _set_scat_type(self):
         """ set scatterer type """
         if self.stype == 'iso':
-            self.SC = ScatIso(sigma_s_hh=self.ks_h/self.Nv, sigma_s_vv=self.ks_v/self.Nv, sigma_s_hv=self.ks_v/self.Nv)   # note that the cross pol scatt. coeff. is the same as the copol due to isotropic behavior
+            self.SC = ScatIso(sigma_s_hh=self.ks_h, sigma_s_vv=self.ks_v, sigma_s_hv=self.ks_v)   # note that the cross pol scatt. coeff. is the same as the copol due to isotropic behavior
         elif self.stype == 'rayleigh':
-            self.SC = ScatRayleigh(sigma_s_hh = 1.5*self.ks_h/self.Nv, sigma_s_vv=1.5*self.ks_v/self.Nv, sigma_s_hv=1.5*self.ks_v/self.Nv)  # eq. 11.22
+            self.SC = ScatRayleigh(sigma_s_hh = self.ks_h, sigma_s_vv=self.ks_v, sigma_s_hv=self.ks_v)  # eq. 11.22
         elif self.stype == 'cloud':
             assert False  # here implemenatation of 11.5 then
         else:
@@ -338,14 +335,14 @@ class CanopyHomoRT(object):
         This is a function of the scatterer type chosen (e.g. isotropic,
         rayleigh, cloud model, ...)
         """
-        return self.SC.sigma_v_back(self.Nv)
+        return self.SC.sigma_v_back()
 
     def _calc_sigma_bistatic(self):
         """
         calculate volume bistatic scattering coefficient
         of scatterer
         """
-        return self.SC.sigma_v_bist(self.Nv)
+        return self.SC.sigma_v_bist()
 
 
 
@@ -381,6 +378,12 @@ class CanopyHomoRT(object):
         s_hh = (1.-self.t_h*self.t_h)*(self.sigma_vol_back['hh']*np.cos(self.theta))/(self.ke_h+self.ke_h)
         s_vv = (1.-self.t_v*self.t_v)*(self.sigma_vol_back['vv']*np.cos(self.theta))/(self.ke_v+self.ke_v)
         s_hv = (1.-self.t_h*self.t_v)*(self.sigma_vol_back['hv']*np.cos(self.theta))/(self.ke_h+self.ke_v)
+
+
+        #print 'SIG_C: ', s_hh, 0.75*(self.ks_h/self.ke_h)*np.cos(self.theta)*(1.+self.t_h**2.)
+        a=self.sigma_vol_back['hh']
+        b=0.75*self.ks_h
+        print a,b,a-b, a/b
 
         return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv} 
 

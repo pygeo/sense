@@ -21,7 +21,7 @@ class TestModel(unittest.TestCase):
 
 class TestSingle(unittest.TestCase):
     def setUp(self):
-        self.theta = np.deg2rad(np.arange(1.,80.))
+        self.theta = np.deg2rad(np.arange(5.,80.))
         self.freq  = 5.
 
     def test_init(self):
@@ -49,24 +49,28 @@ class TestSingle(unittest.TestCase):
 
     def test_scat_rayleigh(self):
 
+        theta = self.theta*1.
+        #theta = np.array([np.deg2rad(90.)])
+
+
         stype = 'turbid_rayleigh'
         models = {'surface': 'Oh92', 'canopy': stype}
         eps = 5. -3.j
-        d = 3
+        d = 1
         ke = 0.05
-        omega=0.
+        omega=0.5
         soil = Soil(eps=eps, f=5., s=0.02)
         can = OneLayer(ke_h=ke, ke_v=ke, d=d, ks_h = omega*ke, ks_v = omega*ke)
-        S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=self.theta, freq=self.freq)
+        S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta, freq=self.freq)
         S.sigma0()
 
         models = {'surface': 'Dubois95', 'canopy': stype}
         eps = 5. -3.j
-        S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=self.theta, freq=self.freq)
+        S = model.SingleScatRT(surface=soil, canopy=can, models=models, theta=theta, freq=self.freq)
         S.sigma0()
 
         # compare results against results obtained through Eq. 11.23 (analytic way)
-        theta = self.theta*1.
+
         SMODEL = Dubois95(eps, soil.ks, theta, lam=f2lam(soil.f))
         s_hh_surf = SMODEL.hh
         s_vv_surf = SMODEL.vv
@@ -74,21 +78,38 @@ class TestSingle(unittest.TestCase):
         trans = np.exp(-d*ke/np.cos(theta))
         n=2.  # 2== coherent
         RHO_h = S.G.rho_h
-        ref_hh = trans**2. * s_hh_surf + (3.*omega/4.)*np.cos(theta)*(1.-trans**2.)*(1.+RHO_h**2.*trans**2.)+3.*n*omega*ke*d*RHO_h*trans**2.
-        ref_vv = trans**2. * s_vv_surf + (3.*omega/4.)*np.cos(theta)*(1.-trans**2.)*(1.+RHO_h**2.*trans**2.)+3.*n*omega*ke*d*RHO_h*trans**2.
+        RHO_v = S.G.rho_v
+        ref_hh = trans**2. * s_hh_surf + (0.75*omega)*np.cos(theta)*(1.-trans**2.)*(1.+RHO_h**2.*trans**2.)+3.*n*omega*ke*d*RHO_h*trans**2.
+        ref_vv = trans**2. * s_vv_surf + (0.75*omega)*np.cos(theta)*(1.-trans**2.)*(1.+RHO_v**2.*trans**2.)+3.*n*omega*ke*d*RHO_v*trans**2.
+
+
+
 
         pol = 'hh'
         self.assertEqual(len(ref_hh), len(S.stot[pol]))
         for i in xrange(len(ref_hh)):
+            #print np.rad2deg(theta[i]), ref_hh[i]
             if np.isnan(ref_hh[i]):
                 self.assertTrue(np.isnan(S.stot[pol][i]))
             else:
-                self.assertAlmostEqual(db(ref_hh[i]), db(S.stot[pol][i]))
+                # check components first
+                self.assertAlmostEqual(S.s0g[pol][i], s_hh_surf[i]*trans[i]**2.)  # attenuated ground
+                self.assertAlmostEqual(S.s0c[pol][i]+S.s0gcg[pol][i], 0.75*omega*np.cos(theta[i])*(1.-trans[i]**2.)*(1.+RHO_h[i]**2.*trans[i]**2.))
+
+                # gcg
+                #self.assertAlmostEqual(S.s0gcg[pol][i], 2.*2.*omega*ke*d*RHO_h[i]*trans[i]**2.)
+
+
+                #db1=db(ref_hh[i])
+                #db2=db(S.stot[pol][i])
+                #print db1, db2, db1-db2
+                #self.AlmostEqual(db1,db2,5)
         #self.assertEqual(ref_vv, res['vv'])
 
         pol = 'vv'
         self.assertEqual(len(ref_vv), len(S.stot[pol]))
         for i in xrange(len(ref_vv)):
+            #print theta[i], ref_vv[i]
             if np.isnan(ref_vv[i]):
                 self.assertTrue(np.isnan(S.stot[pol][i]))
             else:
