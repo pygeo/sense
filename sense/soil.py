@@ -3,6 +3,7 @@ Class specifying a soil
 """
 import numpy as np
 from . util import f2lam
+from . dielectric import Dobson85
 
 class Soil(object):
     def __init__(self, **kwargs):
@@ -10,7 +11,7 @@ class Soil(object):
         Parameters
         ----------
         eps : complex
-            relative permitivity
+            relative permitivity, if this is not given, then mv needs to be given
         s : float
             surface rms height [m]
         mv : float
@@ -23,6 +24,12 @@ class Soil(object):
             identifier for sphape of autocorrelation fucntion 
             G = Gaussian
             E = Exponential
+        mv : float
+            volumetric moisture content [m**3/m**3]
+        clay : float
+            optional fractional clay content
+        sand : float
+            optional fraction sand content
         """
 
         self.eps = kwargs.get('eps', None)
@@ -31,8 +38,14 @@ class Soil(object):
         self.s = kwargs.get('s', None)
         self.l = kwargs.get('l', None)
         self.acl = kwargs.get('acl', None)
+        self.clay = kwargs.get('clay', None)
+        self.sand = kwargs.get('sand', None)
+        self.dc_model = kwargs.get('dc_model', 'Dobson85')
         self._check()
-        self._convert_eps_mv()
+        if self.eps is not None:
+            self._convert_eps2mv()
+        if self.mv is not None:
+            self._convert_mv2eps()
 
         # wavenumber
         self.k = 2.*np.pi / f2lam(self.f)  # note that wavenumber is in meter and NOT in cm!
@@ -44,7 +57,25 @@ class Soil(object):
         else:
             self.kl = None
 
-    def _convert_eps_mv(self):
+
+    def _convert_mv2eps(self):
+        """
+        convert mv to eps 
+        using dielectric model
+        """
+        if (self.clay is None) or (self.sand is None):
+            self.eps = None
+            print('WARNING: Permittivity can not be calculated due to missing soil texture!')
+        if self.dc_model == 'Dobson85':
+            DC = Dobson85(clay=self.clay, sand=self.sand, mv=self.mv, freq=self.f) 
+        else:
+            assert False, 'Invalid DC model! ' + self.dc_model
+        
+        self.eps = DC.eps
+
+
+
+    def _convert_eps2mv(self):
         """
         This routine converts soil moisture into
         dielectric properties and vice versa

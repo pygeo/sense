@@ -23,28 +23,23 @@ plt.close('all')
 theta_deg = np.arange(0.,70.)
 theta = np.deg2rad(theta_deg)
 
-f  = 1.5  # GHz
+f  = 3.  # GHz
 lam = f2lam(f)  # m
 
-s = 0.0032  # m
-l = 0.099  # m
+s = 0.01  # m
+l = 0.1  # m
 
 omega = 0.1
 
 
 #guessed from figure in chapter 4 for the time being
-eps = 11. - 1.5j
 
 # canopy
-ke=0.
+ke=1.
 ks=omega*ke
 
 models = {'surface' : 'Oh92', 'canopy' : 'turbid_rayleigh'}
-S = Soil(f=f, s=s, l=l, eps=eps)
-
-
-print S.ks
-print S.kl
+S = Soil(f=f, s=s, l=l, mv=0.2, sand=0.3, clay=0.3)
 
 pol='vv'
 
