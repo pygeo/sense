@@ -17,13 +17,13 @@ class TestSingle(unittest.TestCase):
 
     def test_iso(self):
         S = ScatIso(sigma_s_hh = self.s_s_hh, sigma_s_vv = self.s_s_hh, sigma_s_hv = self.s_s_hh)
-        r = S.sigma_v_back(1.)
+        r = S.sigma_v_back()
         self.assertTrue(isinstance(r, dict))
         self.assertEqual(len(r), 3)
 
     def test_rayleigh(self):
         S = ScatRayleigh(sigma_s_hh = self.s_s_hh, sigma_s_vv = self.s_s_vv, sigma_s_hv = self.s_s_hv)
-        r = S.sigma_v_back(1.)
+        r = S.sigma_v_back()
         self.assertTrue(isinstance(r, dict))
         self.assertEqual(len(r), 3)
 
@@ -32,11 +32,11 @@ class TestSingle(unittest.TestCase):
         Nv = 5.
         k_s = 2.
         
-        sigma_s_pp = k_s/Nv
+        sigma_s_pp = k_s
 
         S = ScatRayleigh(sigma_s_hh = sigma_s_pp, sigma_s_vv = sigma_s_pp, sigma_s_hv = sigma_s_pp)
-        s_v = S.sigma_v_back(Nv)
-        s_b = S.sigma_v_bist(Nv)
+        s_v = S.sigma_v_back()
+        s_b = S.sigma_v_bist()
 
         for k in s_v.keys():
             self.assertEqual(s_v[k], s_b[k])
@@ -47,11 +47,11 @@ class TestSingle(unittest.TestCase):
 
         Nv = 7.
         k_s = 2.
-        sigma_s_pp = k_s/Nv
+        sigma_s_pp = k_s
 
         S = ScatIso(sigma_s_hh=sigma_s_pp, sigma_s_vv=sigma_s_pp, sigma_s_hv=sigma_s_pp)
-        s_v = S.sigma_v_back(Nv)
-        s_b = S.sigma_v_bist(Nv)
+        s_v = S.sigma_v_back()
+        s_b = S.sigma_v_bist()
 
         for k in s_v.keys():
             self.assertEqual(s_v[k], s_b[k])

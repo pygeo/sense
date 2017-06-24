@@ -38,12 +38,19 @@ omega = 0.1
 ke=1.
 ks=omega*ke
 
-models = {'surface' : 'Oh92', 'canopy' : 'turbid_rayleigh'}
+# results strongly depend on the surface scattering model chosen!
+# Oh92 gives a much smoother response at low incidence angles compared
+# to the Dubois95 model
+
+# shape of ACL would certailny also play an important role!
+
+models = {'surface' : 'Dubois95', 'canopy' : 'turbid_rayleigh'}
 S = Soil(f=f, s=s, l=l, mv=0.2, sand=0.3, clay=0.3)
 
 pol='vv'
 
-d = 0.22
+
+d = 2.3
 C = OneLayer(ke_h=ke, ke_v=ke, d=d, ks_v=ks, ks_h=ks)
 RT = SingleScatRT(theta=theta, models=models, surface=S, canopy=C, freq=f)
 RT.sigma0()
@@ -55,7 +62,7 @@ ax.plot(theta_deg, 10.*np.log10(RT.s0g[pol]), label='SIGGROUND', color='r')
 ax.plot(theta_deg, 10.*np.log10(RT.s0c[pol]), label='SIG can', color='b')
 ax.plot(theta_deg, 10.*np.log10(RT.s0cgt[pol]), label='SIG can ground', color='g')
 ax.plot(theta_deg, 10.*np.log10(RT.s0gcg[pol]), label='SIG ground can ground', color='k', linestyle='--')
-ax.plot(theta_deg, 10.*np.log10(RT.G.rt_s.vv), label='surface', linestyle='-.')
+#ax.plot(theta_deg, 10.*np.log10(RT.G.rt_s.vv), label='surface', linestyle='-.')
 
 #ax.legend()
 ax.set_title('d='+str(d))
