@@ -379,11 +379,10 @@ class CanopyHomoRT(object):
         s_vv = (1.-self.t_v*self.t_v)*(self.sigma_vol_back['vv']*np.cos(self.theta))/(self.ke_v+self.ke_v)
         s_hv = (1.-self.t_h*self.t_v)*(self.sigma_vol_back['hv']*np.cos(self.theta))/(self.ke_h+self.ke_v)
 
-
-        #print 'SIG_C: ', s_hh, 0.75*(self.ks_h/self.ke_h)*np.cos(self.theta)*(1.+self.t_h**2.)
-        a=self.sigma_vol_back['hh']
-        b=0.75*self.ks_h
-        print a,b,a-b, a/b
+        # this seems o.k. here
+        #a=self.sigma_vol_back['hh']
+        #b=1.5*self.ks_h
+        #print a,b,a-b, a/b, self.ks_h
 
         return {'hh' : s_hh, 'vv' : s_vv, 'hv' : s_hv} 
 

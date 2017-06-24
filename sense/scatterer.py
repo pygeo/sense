@@ -4,6 +4,9 @@ Definition of scatter types
 
 class Scatterer(object):
     def __init__(self, **kwargs):
+        # NOTE THAT THE arguments are not necessarily the 
+        # particle scattering cross sections!!!!
+        # need to be made in a clearer way !!!!
         self.sigma_s_hh = kwargs.get('sigma_s_hh', None)  # particle scattering cross area
         assert self.sigma_s_hh is not None, 'Particle HH scattering cross section needs to be specified [m**-2]'
 
@@ -50,6 +53,9 @@ class ScatRayleigh(Scatterer):
         super(ScatRayleigh, self).__init__(**kwargs)
 
     def sigma_v_back(self):
+        # sigma_s_pp is assumed to correspond to volume extinction coefficient
+
+        print 'KS in routine: ', self.sigma_s_hh, 1.5*self.sigma_s_hh
         return {'hh' : 1.5*self.sigma_s_hh, 'vv' : 1.5*self.sigma_s_vv, 'hv' : 1.5*self.sigma_s_hv}
 
     def sigma_v_bist(self):
