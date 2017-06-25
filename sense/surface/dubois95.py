@@ -18,6 +18,7 @@ class Dubois95(SurfaceScatter):
         self.lam = lam
         assert self.lam is not None
         self.vv, self.hh = self._calc_sigma()
+        self.hv = None
 
     def _calc_sigma(self):
         lam = self.lam*100. 

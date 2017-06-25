@@ -25,6 +25,8 @@ class Reflectivity(object):
     """
     def __init__(self, eps, theta):
         """
+        table 2.5 Ulaby (2014)
+        assumes specular surface
         Parameters
         ----------
         eps : complex

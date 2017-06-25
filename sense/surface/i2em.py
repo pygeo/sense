@@ -6,7 +6,7 @@ backscattering model for single scale random surfaces
 The code originates from ideas obtained from the supplement
 of Ulaby et al (2014)
 """
-from scatter import SurfaceScatter
+from . scatter import SurfaceScatter
 import numpy as np
 
 from .. util import f2lam

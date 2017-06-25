@@ -1,6 +1,6 @@
 """
 compare results of implemented models
-against Fig 10.42 from Ulaby (2014)
+against Fig 10.43 from Ulaby (2014)
 """
 
 import sys
@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 plt.close('all')
 
 theta = np.deg2rad(40.)
-eps = 5.46 -0.37j
+#eps = 5.46 -0.37j
 
 
 
@@ -31,12 +31,16 @@ f  = 1.6  # GHz
 lam = f2lam(f)  # m
 k = 2.*np.pi/lam
 
-S= np.linspace(0.0001,0.03, 500)
+ks = 0.4
+s = ks/k
+l=6.*s
 
-KS = []        
-for s in S:
+DC = np.arange(3.,35.)
 
-    ks = k*s
+for dc in DC:
+
+    eps = dc -0.37j  #todo imaginary part dynamic as well
+
     # Dubois 95
     D = Dubois95(eps, ks, theta, lam)
     s_hh_d.append(D.hh)
@@ -47,9 +51,7 @@ for s in S:
     s_vv_o.append(O.vv)
     s_hh_o.append(O.hh)
 
-    KS.append(ks)
 
-KS = np.array(KS)
 
 s_vv_o = 10.*np.log10(np.array(s_vv_o))
 s_hh_o = 10.*np.log10(np.array(s_hh_o))
@@ -61,22 +63,22 @@ f = plt.figure()
 ax1 = f.add_subplot(121)
 ax2 = f.add_subplot(122)
 
-ax1.plot(KS, s_vv_d, color='red', label='SMART, Dubois95')
-ax1.plot(KS, s_vv_o, color='blue', label='PRISM1, Oh92')
+ax1.plot(DC, s_vv_d, color='red', label='SMART, Dubois95')
+ax1.plot(DC, s_vv_o, color='blue', label='PRISM1, Oh92')
 ax1.grid()
 ax1.legend()
-ax1.set_xlim(0.06,0.82)
-ax1.set_ylim(-35.,-10.)
-ax1.set_xlabel('ks')
+ax1.set_xlim(3.,33.)
+ax1.set_ylim(-22.,-6.)
+ax1.set_xlabel('DC')
 ax1.set_ylabel('backscattering coefficient VV [dB]')
 
-ax2.plot(KS, s_hh_d, color='red', label='SMART, Dubois95')
-ax2.plot(KS, s_hh_o, color='blue', label='PRISM1, Oh92')
+ax2.plot(DC, s_hh_d, color='red', label='SMART, Dubois95')
+ax2.plot(DC, s_hh_o, color='blue', label='PRISM1, Oh92')
 ax2.grid()
 ax2.legend()
-ax2.set_xlim(0.06,0.82)
-ax2.set_ylim(-35.,-10.)
-ax2.set_xlabel('ks')
+ax2.set_xlim(3.,33.)
+ax2.set_ylim(-22.,-6.)
+ax2.set_xlabel('DC')
 ax2.set_ylabel('backscattering coefficient HH [dB]')
 
 
