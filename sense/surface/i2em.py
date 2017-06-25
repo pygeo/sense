@@ -49,6 +49,7 @@ class I2EM(SurfaceScatter):
         self.phi = 0.
         self.thetas = self.theta*1.
         self.phis = np.deg2rad(180.)
+        self.mode = 'backscatter'
 
         # do initializations for backscatter calculations
         self._init_hlp()
@@ -174,7 +175,7 @@ class I2EM(SurfaceScatter):
         Fvvdns, Fhhdns = self.Fppupdn(-1,2,Rvi,Rhi)
 
         # fpp calculations
-        fvv, fhh = self.calc_fpp()
+        fvv, fhh = self.calc_fpp(Rvi, Rhi)
 
         # Ipp
         Ivv = fvv*h1
@@ -191,9 +192,9 @@ class I2EM(SurfaceScatter):
 
         return Ivv, Ihh
 
-    def calc_fpp(self):
+    def calc_fpp(self, Rvi, Rhi):
 
-        Rvt, Rht = self.calc_reflection_coefficients()
+        Rvt, Rht = self.calc_reflection_coefficients(Rvi, Rhi)
 
         fvv =  2. * Rvt *(self._s * self._ss - (1. + self._cs * self._css) * self._cfs)/(self._cs + self._css)
         fhh = -2. * Rht *(self._s * self._ss - (1. + self._cs * self._css) * self._cfs)/(self._cs + self._css)
@@ -259,12 +260,45 @@ class I2EM(SurfaceScatter):
 
         return vv, hh
 
-    def calc_reflection_coefficients(self):
-        assert False, 'Still needs implementation'
-        return 1., 1.
+
+    def _calc_r_transition(self):
+        """ compute R transition """
+
+        Rv0 = (np.sqrt(self.eps)-1.) / (np.sqrt(self.eps) + 1.)
+        Rh0 = -Rv0
+
+        Ft = 8. * Rv0**2. + self._ss * (self._cs + np.sqrt(self.eps - self._s2))/(self._cs * np.sqrt(self.eps - self._s2))
+
+
+weiter hier
 
 
 
+        St = 0.25 * np.abs(Ft)**2. * a1/b1
+        St0 = 1. / np.abs(1.+8.*Rv0/(self._cs * Ft))**2.
+        Tf = 1. - St / St0
+
+        return Rv0, Rh0, Tf
+
+
+    def calc_reflection_coefficients(self, Rvi, Rhi):
+
+
+        Rv0, Rh0, Tf = self._calc_r_transition()
+
+
+        # select proper reflection coefficients
+        if self.mode == 'backscatter':  # todo this comparison might slow down the program as it is called very often; perhaps modify
+            Rvt = Rvi + (Rv0 - Rvi) * Tf
+            Rht = Rhi + (Rh0 - Rhi) * Tf
+        elif self.mode == 'bistatic':
+            Rvt = Rav
+            Rht = Rah
+            pass
+        else:
+            assert False
+
+        return Rvt, Rht
 
 
 class Roughness(object):
