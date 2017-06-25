@@ -10,18 +10,22 @@ from . scatter import SurfaceScatter
 import numpy as np
 
 from .. util import f2lam
+from .. core import Reflectivity
 import math
 
 class I2EM(SurfaceScatter):
-    def __init__(self, f, eps, s, l, theta, acf_type='gauss'):
+    def __init__(self, f, eps, sig, l, theta, acf_type='gauss'):
         """
+
+        BACKSCATTERING MODEL
+
         Parameters
         ----------
         f : float
             frequency [GHz]
         eps : complex
             relative dielectric permitivity
-        s : float
+        sig : float
             vertical surface roughness  [m]
         l : float
             autocorrelation length [m]
@@ -32,15 +36,14 @@ class I2EM(SurfaceScatter):
             'gauss' : gaussian type ACF
         """
 
-
         self.freq = f
         lam = f2lam(self.freq)
         k = 2.*np.pi/lam
         self.k = k
-        self.s = s
+        self.sig = sig
         self.l = l
         self.acf_type = acf_type
-        super(I2EM, self).__init__(eps, k*s, theta, kl=k*l)
+        super(I2EM, self).__init__(eps, k*sig, theta, kl=k*l)
         
         # assume backscatter geometry
         self.phi = 0.
@@ -85,9 +88,9 @@ class I2EM(SurfaceScatter):
         self._css = np.cos(self.thetas)
         self._cfs = np.cos(self.phis)
         self._sfs = np.sin(self.phis)
-        self._s2 = self.s**2.
-        self._kx = self.k*self.s*self._cf
-        self._ky = self.k*self.s*self._sf
+        self._s2 = self._s**2.
+        self._kx = self.k*self._s*self._cf
+        self._ky = self.k*self._s*self._sf
         self._kz = self.k*self._cs
 
         self._ksx = self.k * self._ss *self._cfs
@@ -101,9 +104,14 @@ class I2EM(SurfaceScatter):
         self.hv = self._i2em_cross()
 
     def _i2em_bistatic(self):
-        sigvv = 0.
-        sighh = 0.
-        
+        """
+        calculate sigma for the co-pol case
+        backscatter geometr
+        calculate sigma for the co-pol case
+        backscatter geometry
+
+        module 10.1
+        """
         Ivv, Ihh = self._calc_Ipp()
         Ivv_abs = np.abs(Ivv)
         Ihh_abs = np.abs(Ihh)
@@ -118,17 +126,17 @@ class I2EM(SurfaceScatter):
         a0 = wn / fac * (self.s**(2.*idx))
 
         # final backscatter calculation
-        hlp = 0.5*self.k**2*np.exp(-self.s**2*(self._kz**2.+self._ksz**2.))
-        sigvv = np.sum(a0 * Ivv_abs**2.) * ShdwS * hlp
-        sighh = np.sum(a0 * Ihh_abs**2.) * ShdwS * hlp
+        hlp = ShdwS*0.5*self.k**2*np.exp(-self.s**2*(self._kz**2.+self._ksz**2.))
+        sigvv = np.sum(a0 * Ivv_abs**2.) * hlp
+        sighh = np.sum(a0 * Ihh_abs**2.) * hlp
         return  sigvv, sighh
 
     def _i2em_cross(self):
-        print('TODO: CROSS SPECTRUM')
+        assert False
         return None
 
-
     def _calc_shadowing(self):
+        assert False
         print('TODO: shadowing')
         return 1.  ## todo
 
@@ -137,7 +145,7 @@ class I2EM(SurfaceScatter):
         calculate roughness spectrum
         Return wn as an array
         """
-
+        assert 'Validate with code again'
         if acf_type == 'gauss':
             # gaussian autocorrelation function
             S = GaussianSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq)
@@ -146,31 +154,34 @@ class I2EM(SurfaceScatter):
             S = ExponentialSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq)
         else:
             assert False, 'Invalid surface roughness spectrum: ' + str(acf_type)
-
         return S.wn()  # returns wn as an array with length NITER
 
     def _calc_Ipp(self):
-        n = np.arange(self.niter)+1
+        n = np.arange(self.niter)+1.
         qi = self.k*self._cs
         qs = self.k*self._css
 
-        h1= np.exp(-self.s**2. * self._kz * self._ksz)*(self._kz + self._ksz)**n
+        h1= np.exp(-self.sig**2. * self._kz * self._ksz)*(self._kz + self._ksz)**n
 
-        # Calculate the Fppup(dn) i(s) coefficients
-        Fvvupi, Fhhupi = self.Fppupdn()
-        Fvvups, Fhhups = self.Fppupdn()
-        Fvvdni, Fhhdni = self.Fppupdn()
-        Fvvdns, Fhhdns = self.Fppupdn()
+        # Calculate the Fppup(dn) i(s) coefficient
+        R = Reflectivity(self.eps, self.theta)
+        Rvi = R.rho_v
+        Rhi = R.rho_h
+        
+        Fvvupi, Fhhupi = self.Fppupdn( 1,1,Rvi,Rhi)
+        Fvvups, Fhhups = self.Fppupdn( 1,2,Rvi,Rhi)
+        Fvvdni, Fhhdni = self.Fppupdn(-1,1,Rvi,Rhi)
+        Fvvdns, Fhhdns = self.Fppupdn(-1,2,Rvi,Rhi)
 
         # fpp calculations
         fvv, fhh = self.calc_fpp()
 
         # Ipp
         Ivv = fvv*h1
-        Ivv += 0.25*(Fvvupi *(self._ksz-qi)**(n-1) *np.exp(-self.s**2. *(qi**2. - qi*(self._ksz-self._kz))))
-        Ivv += 0.25*(Fvvdni *(self._ksz+qi)**(n-1) *np.exp(-self.s**2. *(qi**2. + qi*(self._ksz-self._kz))))
-        Ivv += 0.25*(Fvvups *(self._kz +qs)**(n-1) *np.exp(-self.s**2. *(qs**2. - qs*(self._ksz-self._kz))))
-        Ivv += 0.25*(Fvvdns *(self._kz -qs)**(n-1) *np.exp(-self.s**2. *(qs**2. + qs*(self._ksz-self._kz))))
+        Ivv += 0.25*(Fvvupi *(self._ksz-qi)**(n-1) *np.exp(-self.sig**2. *(qi**2. - qi*(self._ksz-self._kz))))
+        Ivv += 0.25*(Fvvdni *(self._ksz+qi)**(n-1) *np.exp(-self.sig**2. *(qi**2. + qi*(self._ksz-self._kz))))
+        Ivv += 0.25*(Fvvups *(self._kz +qs)**(n-1) *np.exp(-self.sig**2. *(qs**2. - qs*(self._ksz-self._kz))))
+        Ivv += 0.25*(Fvvdns *(self._kz -qs)**(n-1) *np.exp(-self.sig**2. *(qs**2. + qs*(self._ksz-self._kz))))
 
         Ihh = fhh*h1
         Ihh += 0.25*(Fhhupi *(self._ksz-qi)**(n-1) *np.exp(-self.s**2. *(qi**2. - qi*(self._ksz-self._kz))))
@@ -189,12 +200,61 @@ class I2EM(SurfaceScatter):
         return fvv, fhh
 
 
-    def Fppupdn(self):
+    def Fppupdn(self, u_d, i_s, Rvi, Rhi):
         print('TODO: Fpp')
-        return 1., 1.
+        assert i_s in [1,2]
+        assert u_d in [-1,1]
+
+        # set coefficients
+        if i_s == 1:
+            Gqi = u_d * self._kz
+            Gqti = u_d * self.k *np.sqrt(self.eps-self._s**2.);
+            qi = u_d * self._kz
+            c11 = self.k * self._cfs *(self._ksz - qi)
+            c21 = self._cs *(self._cfs *(self.k**2 *self._s*self._cf*(self._ss *self._cfs - self._s * self._cf) + Gqi*(self.k * self._css - qi))+ self.k**2. *self._cf * self._s *self._ss *self._sfs**2.)
+
+            c31 = self.k*self._s*(self._s*self._cf*self._cfs*(self.k*self._css-qi) - Gqi*(self._cfs*(self._ss*self._cfs -self._s*self._cf)+ self._ss *self._sfs**2.))
+            c41 = self.k *self._cs*(self._cfs*self._css*(self.k*self._css - qi) + self.k *self._ss*(self._ss*self._cfs-self._s*self._cf))
+            c51 = Gqi*(self._cfs *self._css*(qi-self.k*self._css) - self.k *self._ss*(self._ss*self._cfs-self._s*self._cf))
+            c12 = self.k * self._cfs *(self._ksz - qi)
+
+            c22 = self._cs *(self._cfs *(self.k**2. *self._s*self._cf*(self._ss *self._cfs - self._s * self._cf) + Gqti*(self.k * self._css - qi)) + self.k**2. *self._cf * self._s *self._ss *self._sfs**2.)
+            c32 = self.k*self._s*(self._s*self._cf*self._cfs*(self.k*self._css-qi) - Gqti*(self._cfs*(self._ss*self._cfs -self._s*self._cf)- self._ss *self._sfs**2.))
+
+            c42 = self.k *self._cs*(self._cfs*self._css*(self.k*self._css - qi) + self.k *self._ss*(self._ss*self._cfs-self._s*self._cf))
+
+            c52 = Gqti*(self._cfs *self._css*(qi-self.k*self._css) - self.k *self._ss*(self._ss*self._cfs-self._s*self._cf))  
+
+        else:
+            print('Still need to implement')
+            assert False
+
+        q = self._kz
+        qt = self.k * np.sqrt(self.eps - self._s**2.)
+
+        vv =  (1.+Rvi) *( -(1-Rvi) *c11 /q + (1.+Rvi)       *c12 / qt) 
+        vv += (1.-Rvi) *(  (1-Rvi) *c21 /q - (1.+Rvi)       *c22 / qt) 
+        vv += (1.+Rvi) *(  (1-Rvi) *c31 /q - (1.+Rvi)       *c32 /self.eps /qt) 
+        vv += (1.-Rvi) *(  (1+Rvi) *c41 /q - self.eps*(1. - Rvi)  *c42 / qt) 
+        vv += (1.+Rvi) *(  (1+Rvi) *c51 /q - (1.-Rvi)       *c52 / qt)
+
+
+        hh =  (1.+Rhi) *( (1.-Rhi) * c11 /q - self.eps *(1.+Rhi) *c12 / qt)
+        hh -= (1.-Rhi) *( (1.-Rhi) * c21 /q - (1.+Rhi)    *c22 / qt)
+        hh -= (1.+Rhi) *( (1.-Rhi) * c31 /q - (1.+Rhi)    *c32 / qt)
+        hh -= (1.-Rhi) *( (1.+Rhi) * c41 /q - (1.-Rhi)    *c42 / qt)
+        hh -= (1.+Rhi) *( (1.+Rhi) * c51 /q - (1.-Rhi)    *c52 / qt)
+
+
+
+        return vv, hh
 
     def calc_reflection_coefficients(self):
+        assert False, 'Still needs implementation'
         return 1., 1.
+
+
+
 
 
 class Roughness(object):
