@@ -201,7 +201,6 @@ class I2EM(SurfaceScatter):
 
 
     def Fppupdn(self, u_d, i_s, Rvi, Rhi):
-        print('TODO: Fpp')
         assert i_s in [1,2]
         assert u_d in [-1,1]
 
@@ -223,29 +222,40 @@ class I2EM(SurfaceScatter):
 
             c42 = self.k *self._cs*(self._cfs*self._css*(self.k*self._css - qi) + self.k *self._ss*(self._ss*self._cfs-self._s*self._cf))
 
-            c52 = Gqti*(self._cfs *self._css*(qi-self.k*self._css) - self.k *self._ss*(self._ss*self._cfs-self._s*self._cf))  
+            c52 = Gqti*(self._cfs *self._css*(qi-self.k*self._css) - self.k *self._ss*(self._ss*self._cfs-self._s*self._cf))
 
         else:
-            print('Still need to implement')
-            assert False
+            Gqs = u_d * self._ksz
+            Gqts = u_d *self.k *np.sqrt(self.eps-self._ss**2.)
+            qs = u_d * self._ksz
 
+            c11 = self.k * self._cfs *(self._kz + qs)
+            c21 = Gqs *(self._cfs*(self._cs*(self.k*self._cs+qs)-self.k*self._s*(self._ss *self._cfs-self._s*self._cf))-self.k*self._s*self._ss*self._sfs**2.)
+            c31 = self.k *self._ss*(self.k*self._cs*(self._ss*self._cfs - self._s*self._cf)+ self._s*(self._kz+qs))
+            c41 = self.k*self._css*(self._cfs*(self._cs*(self._kz+qs)-self.k*self._s*(self._ss*self._cfs-self._s*self._cf))-self.k*self._s*self._ss*self._sfs**2.)
+            c51 = -self._css *(self.k**2. *self._ss *(self._ss*self._cfs -self._s*self._cf)+ Gqs*self._cfs*(self._kz+qs))
+            c12 = self.k * self._cfs *(self._kz + qs)
+            c22 = Gqts *(self._cfs*(self._cs*(self._kz+qs)-self.k*self._s*(self._ss *self._cfs-self._s*self._cf))-self.k*self._s*self._ss*self._sfs**2.)
+            c32 = self.k *self._ss*(self.k*self._cs*(self._ss*self._cfs - self._s*self._cf)+ self._s*(self._kz+qs))
+            c42 = self.k*self._css*(self._cfs*(self._cs*(self._kz+qs)-self.k*self._s*(self._ss*self._cfs-self._s*self._cf))-self.k*self._s*self._ss*self._sfs**2.)
+            c52 = -self._css *(self.k**2. *self._ss *(self._ss*self._cfs -self._s*self._cf)+ Gqts*self._cfs*(self._kz+qs))
+
+
+        # now do final calculations ...
         q = self._kz
         qt = self.k * np.sqrt(self.eps - self._s**2.)
 
-        vv =  (1.+Rvi) *( -(1-Rvi) *c11 /q + (1.+Rvi)       *c12 / qt) 
-        vv += (1.-Rvi) *(  (1-Rvi) *c21 /q - (1.+Rvi)       *c22 / qt) 
+        vv =  (1.+Rvi) *( -(1-Rvi) *c11 /q + (1.+Rvi)       *c12 / qt)
+        vv += (1.-Rvi) *(  (1-Rvi) *c21 /q - (1.+Rvi)       *c22 / qt)
         vv += (1.+Rvi) *(  (1-Rvi) *c31 /q - (1.+Rvi)       *c32 /self.eps /qt) 
-        vv += (1.-Rvi) *(  (1+Rvi) *c41 /q - self.eps*(1. - Rvi)  *c42 / qt) 
+        vv += (1.-Rvi) *(  (1+Rvi) *c41 /q - self.eps*(1. - Rvi)  *c42 / qt)
         vv += (1.+Rvi) *(  (1+Rvi) *c51 /q - (1.-Rvi)       *c52 / qt)
-
 
         hh =  (1.+Rhi) *( (1.-Rhi) * c11 /q - self.eps *(1.+Rhi) *c12 / qt)
         hh -= (1.-Rhi) *( (1.-Rhi) * c21 /q - (1.+Rhi)    *c22 / qt)
         hh -= (1.+Rhi) *( (1.-Rhi) * c31 /q - (1.+Rhi)    *c32 / qt)
         hh -= (1.-Rhi) *( (1.+Rhi) * c41 /q - (1.-Rhi)    *c42 / qt)
         hh -= (1.+Rhi) *( (1.+Rhi) * c51 /q - (1.-Rhi)    *c52 / qt)
-
-
 
         return vv, hh
 
