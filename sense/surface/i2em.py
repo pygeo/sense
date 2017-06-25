@@ -41,6 +41,7 @@ class I2EM(SurfaceScatter):
         k = 2.*np.pi/lam
         self.k = k
         self.sig = sig
+        self.ks = self.k*self.sig
         self.l = l
         self.acf_type = acf_type
         super(I2EM, self).__init__(eps, k*sig, theta, kl=k*l)
@@ -113,18 +114,20 @@ class I2EM(SurfaceScatter):
 
         module 10.1
         """
+
+        # calculate the integral
+        idx = np.arange(self.niter)+1
+        self.fac = map(math.factorial, idx)  # factorial for all N itterations; this is stored as it is needed multipole times
+
+        self.wn = self.calc_roughness_spectrum(acf_type=self.acf_type) 
         Ivv, Ihh = self._calc_Ipp()
         Ivv_abs = np.abs(Ivv)
         Ihh_abs = np.abs(Ihh)
-        wn = self.calc_roughness_spectrum(acf_type=self.acf_type) 
 
         # calculate shadowing effects
         ShdwS = self._calc_shadowing()
 
-        # calculate the integral
-        idx = np.arange(self.niter)+1
-        fac = map(math.factorial, idx)
-        a0 = wn / fac * (self.s**(2.*idx))
+        a0 = self.wn / self.fac * (self.s**(2.*idx))
 
         # final backscatter calculation
         hlp = ShdwS*0.5*self.k**2*np.exp(-self.s**2*(self._kz**2.+self._ksz**2.))
@@ -185,10 +188,10 @@ class I2EM(SurfaceScatter):
         Ivv += 0.25*(Fvvdns *(self._kz -qs)**(n-1) *np.exp(-self.sig**2. *(qs**2. + qs*(self._ksz-self._kz))))
 
         Ihh = fhh*h1
-        Ihh += 0.25*(Fhhupi *(self._ksz-qi)**(n-1) *np.exp(-self.s**2. *(qi**2. - qi*(self._ksz-self._kz))))
-        Ihh += 0.25*(Fhhdni *(self._ksz+qi)**(n-1) *np.exp(-self.s**2. *(qi**2. + qi*(self._ksz-self._kz))))
-        Ihh += 0.25*(Fhhups *(self._kz +qs)**(n-1) *np.exp(-self.s**2. *(qs**2. - qs*(self._ksz-self._kz))))
-        Ihh += 0.25*(Fhhdns *(self._kz -qs)**(n-1) *np.exp(-self.s**2. *(qs**2. + qs*(self._ksz-self._kz))))
+        Ihh += 0.25*(Fhhupi *(self._ksz-qi)**(n-1) *np.exp(-self.sig**2. *(qi**2. - qi*(self._ksz-self._kz))))
+        Ihh += 0.25*(Fhhdni *(self._ksz+qi)**(n-1) *np.exp(-self.sig**2. *(qi**2. + qi*(self._ksz-self._kz))))
+        Ihh += 0.25*(Fhhups *(self._kz +qs)**(n-1) *np.exp(-self.sig**2. *(qs**2. - qs*(self._ksz-self._kz))))
+        Ihh += 0.25*(Fhhdns *(self._kz -qs)**(n-1) *np.exp(-self.sig**2. *(qs**2. + qs*(self._ksz-self._kz))))
 
         return Ivv, Ihh
 
@@ -269,16 +272,34 @@ class I2EM(SurfaceScatter):
 
         Ft = 8. * Rv0**2. + self._ss * (self._cs + np.sqrt(self.eps - self._s2))/(self._cs * np.sqrt(self.eps - self._s2))
 
-
-weiter hier
-
-
+        idx = np.arange(self.niter)+1
+        a0 = (self.ks*self._cs)**(2.*idx)/self.fac
+        a1 = np.sum(a0*self.wn)
+        b1 = np.sum(a0 * (np.abs(Ft/2. + 2.**(idx+1) *Rv0/self._cs *np.exp(-(self.ks*self._cs)**2.)))**2. * self.wn)
 
         St = 0.25 * np.abs(Ft)**2. * a1/b1
         St0 = 1. / np.abs(1.+8.*Rv0/(self._cs * Ft))**2.
         Tf = 1. - St / St0
 
         return Rv0, Rh0, Tf
+
+    def _calculate_average_reflection_coefficients(self):
+        assert False, 'Not implemented yet!'
+        #%----------- compute average reflection coefficients ------------
+        #%-- these coefficients account for slope effects, especially near the
+        #%brewster angle. They are not important if the slope is small.
+
+        #sigx = 1.1 .*sig/L;
+        #sigy = sigx;
+        #xxx = 3*sigx;
+
+        #Rav = dblquad(@(Zx, Zy)Rav_integration(Zx, Zy, cs,s,er,s2,sigx, sigy),-xxx,xxx, -xxx, xxx );
+
+        #Rah = dblquad(@(Zx, Zy)Rah_integration(Zx, Zy, cs,s,er,s2,sigx, sigy),-xxx,xxx, -xxx, xxx );
+
+        #Rav = Rav ./(2*pi * sigx * sigy);
+        #Rah = Rah ./(2*pi * sigx * sigy);
+
 
 
     def calc_reflection_coefficients(self, Rvi, Rhi):
@@ -292,6 +313,7 @@ weiter hier
             Rvt = Rvi + (Rv0 - Rvi) * Tf
             Rht = Rhi + (Rh0 - Rhi) * Tf
         elif self.mode == 'bistatic':
+            Rav = Rah = self._calculate_average_reflection_coefficients()
             Rvt = Rav
             Rht = Rah
             pass
