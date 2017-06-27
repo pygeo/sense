@@ -32,7 +32,6 @@ l = 0.1  # m
 omega = 0.1
 
 
-#guessed from figure in chapter 4 for the time being
 
 # canopy
 ke=1.
