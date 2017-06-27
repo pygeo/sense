@@ -527,17 +527,18 @@ class GaussianSpectrum(Roughness):
         return wn, rss
 
     def calc_wn_matrix(self, rx, ry, nspec):
-        wn = np.zeros(nspec)
-        for i in xrange(nspec):
-            n = i + 1
-            wn[n-1] = 0.5 *self._kl2/float(n) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*n))
-        return wn
+        #wn = np.zeros(nspec)
+        #for i in xrange(nspec):
+            #n = i + 1.
+            #wn[i] = 0.5 *self._kl2/(i+1.) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*(i+1)))
+        return np.array([0.5 *self._kl2/(i+1.) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*(i+1))) for i in xrange(nspec)])
+        
 
     def calc_wm_matrix(self, rx, ry, nspec):
         wm = np.zeros(nspec)
         for i in xrange(nspec):
-            n = i + 1
-            wm[n-1] = 0.5 *self._kl2/float(n) * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*n))
+            n = i + 1.
+            wm[i] = 0.5 *self._kl2/n * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*n))
         return wm
 
 
