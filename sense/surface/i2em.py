@@ -136,8 +136,10 @@ class I2EM(SurfaceScatter):
         return  sigvv, sighh
 
     def _i2em_cross(self):
-        #assert False
-        return None
+        assert False
+
+        svh = None
+        return svh
 
     def _calc_shadowing(self):
 
