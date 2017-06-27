@@ -231,10 +231,15 @@ class I2EM(SurfaceScatter):
 
         # this can be done much faster !!!
         vhmnsum = 0.
-        idx = np.arange(self.n_spec)+1
-        for n in idx:
-            for m in idx:
-                vhmnsum += wn[n-1] * wm[m-1] * (self._ks2*self._cs2)**(n+m)/math.factorial(n)/math.factorial(m)
+        I = np.arange(self.n_spec)
+        print self.n_spec
+        idx = I+1.
+        fac = map(math.factorial, idx)
+        for i in I:
+            #n = idx[i]
+            #for j in I:
+            #m = idx[j]
+            vhmnsum += np.array([wn[i] * wm[j] * (self._ks2*self._cs2)**(idx[i]+idx[j])/fac[i]/fac[j] for j in I]).sum()
 
         # compute VH scattering coefficient
         acc = np.exp(-2.* self._ks2 *self._cs2) /(16. * np.pi)
@@ -532,14 +537,14 @@ class GaussianSpectrum(Roughness):
             #n = i + 1.
             #wn[i] = 0.5 *self._kl2/(i+1.) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*(i+1)))
         return np.array([0.5 *self._kl2/(i+1.) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*(i+1))) for i in xrange(nspec)])
-        
 
     def calc_wm_matrix(self, rx, ry, nspec):
-        wm = np.zeros(nspec)
-        for i in xrange(nspec):
-            n = i + 1.
-            wm[i] = 0.5 *self._kl2/n * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*n))
-        return wm
+        #wm = np.zeros(nspec)
+        #for i in xrange(nspec):
+        #    n = i + 1.
+        #wm[i] = 0.5 *self._kl2/n * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*n))
+        return np.array([0.5 *self._kl2/(i+1) * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*(i+1))) for i in xrange(nspec)])
+        
 
 
 class ExponentialSpectrum(Roughness):
