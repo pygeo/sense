@@ -230,22 +230,24 @@ class I2EM(SurfaceScatter):
         wn, wm = self._calc_roughness_spectra_matrix(rx, ry) 
 
         # this can be done much faster !!!
-        vhmnsum = 0.
+        #vhmnsum = 0.
         I = np.arange(self.n_spec)
-        print self.n_spec
         idx = I+1.
         fac = map(math.factorial, idx)
-        for i in I:
-            #n = idx[i]
-            #for j in I:
-            #m = idx[j]
-            vhmnsum += np.array([wn[i] * wm[j] * (self._ks2*self._cs2)**(idx[i]+idx[j])/fac[i]/fac[j] for j in I]).sum()
+        #for i in I:
+        #n = idx[i]
+        #for j in I:
+        #m = idx[j]
+        #vhmnsum +=
+        vhmnsum = np.array([np.array([wn[i] * wm[j] * (self._ks2*self._cs2)**(idx[i]+idx[j])/fac[i]/fac[j] for j in I]).sum() for i in I]).sum()
 
         # compute VH scattering coefficient
         acc = np.exp(-2.* self._ks2 *self._cs2) /(16. * np.pi)
         VH = 4. * acc * Fvh * vhmnsum * r
         y = VH * sha
         return y
+
+    # todo use numba to speed up ??
     
     def _calc_roughness_spectra_matrix(self, nx, ny):
         """
