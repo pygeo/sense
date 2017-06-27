@@ -199,7 +199,6 @@ class I2EM(SurfaceScatter):
         #nr = len(r)
 
         r2 = r**2.
-
         sf = np.sin(phi)
         csf = np.cos(phi)
         rx = r * csf
