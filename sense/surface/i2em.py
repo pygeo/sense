@@ -14,7 +14,7 @@ from .. core import Reflectivity
 import math
 
 class I2EM(SurfaceScatter):
-    def __init__(self, f, eps, sig, l, theta, acf_type='gauss'):
+    def __init__(self, f, eps, sig, l, theta, **kwargs):
         """
 
         BACKSCATTERING MODEL
@@ -34,6 +34,10 @@ class I2EM(SurfaceScatter):
         acf_type : str
             type of autocorrelation function
             'gauss' : gaussian type ACF
+        auto : bool
+            specify if number of spectral components should be automatically
+            determined for cross-pol calculations
+            if False, then nspec=15
         """
 
         self.freq = f
@@ -43,7 +47,7 @@ class I2EM(SurfaceScatter):
         self.sig = sig
         self.ks = self.k*self.sig
         self.l = l
-        self.acf_type = acf_type
+        self.acf_type = kwargs.get('acf_type', 'gauss')
         super(I2EM, self).__init__(eps, k*sig, theta, kl=k*l)
         
         # assume backscatter geometry
@@ -51,6 +55,8 @@ class I2EM(SurfaceScatter):
         self.thetas = self.theta*1.
         self.phis = np.deg2rad(180.)
         self.mode = 'backscatter'
+
+        self.auto = kwargs.get('auto', True)
 
         # do initializations for backscatter calculations
         self._init_hlp()
@@ -64,6 +70,19 @@ class I2EM(SurfaceScatter):
         initialize model for calculations
         """
         self.niter = self._estimate_itterations()
+
+        # determine number of spectral components for cross-pol calculations
+        if self.auto:
+            # same as function _estimate_itterations, but with slightly different config
+            nspec = 0
+            error = 1.E8
+            while error > 1.0E-8:
+                nspec += 1
+                error = (self._ks2*(2.*self._cs)**2.)**nspec / math.factorial(nspec)  
+            self.n_spec = nspec
+        else:
+            self.n_spec = 15
+
 
     def _estimate_itterations(self):
         """
@@ -103,7 +122,7 @@ class I2EM(SurfaceScatter):
         assert isinstance(self.theta, float), 'Currently array processing not supported yet!'
         # calculate backscattering coefficients
         self.vv, self.hh = self._i2em_bistatic()
-        self.hv = self._i2em_cross()
+        #self.hv = self._i2em_cross()
 
     def _i2em_bistatic(self):
         """
@@ -136,10 +155,35 @@ class I2EM(SurfaceScatter):
         return  sigvv, sighh
 
     def _i2em_cross(self):
+        rt = np.sqrt(self.eps - self._s2)
+        rv = (self.eps*self._cs -rt) / (self.eps*self._cs + rt)
+        rh = (self._cs - rt)/(self._cs + rt)
+        rvh = (rv-rh)/2.
+
+        Shdw = self._calc_shadow_cross()
+
+        svh = self._integrate_xpol(rvh)
+        return svh*Shdw
+
+
+    def _integrate_xpol(self, rvh):
+        """
+        integrate for X-pol
+        dblquad(@(r,phi)xpol_integralfunc(r, phi, sp,xx, ks2, cs,s, kl2, L, er, rss, rvh, n_spec), 0.1, 1, 0, pi)
+        """
         assert False
 
-        svh = None
-        return svh
+
+
+
+    def _calc_shadow_cross(self):
+        """"
+        calculating shadow consideration in single scat (Smith, 1967)
+        """
+        ct = np.cos(self.theta)/np.sin(self.theta)
+        farg = ct /np.sqrt(2.) /self.rss
+        gamma = 0.5 *(np.exp(-farg**2.) / 1.772 / farg - math.erfc(farg))
+        return 1. / (1. + gamma)
 
     def _calc_shadowing(self):
 
