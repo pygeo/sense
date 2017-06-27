@@ -13,6 +13,8 @@ from .. util import f2lam
 from .. core import Reflectivity
 import math
 
+from scipy.integrate import dblquad
+
 class I2EM(SurfaceScatter):
     def __init__(self, f, eps, sig, l, theta, **kwargs):
         """
@@ -102,6 +104,7 @@ class I2EM(SurfaceScatter):
         """ initiate help variables """
         self._ks2 = self.ks**2.
         self._cs = np.cos(self.theta)
+        self._cs2 = self._cs**2.
         self._s = np.sin(self.theta)
         self._sf = np.sin(self.phi)
         self._cf = np.cos(self.phi)
@@ -122,7 +125,7 @@ class I2EM(SurfaceScatter):
         assert isinstance(self.theta, float), 'Currently array processing not supported yet!'
         # calculate backscattering coefficients
         self.vv, self.hh = self._i2em_bistatic()
-        #self.hv = self._i2em_cross()
+        self.hv = self._i2em_cross()
 
     def _i2em_bistatic(self):
         """
@@ -170,12 +173,30 @@ class I2EM(SurfaceScatter):
         """
         integrate for X-pol
         dblquad(@(r,phi)xpol_integralfunc(r, phi, sp,xx, ks2, cs,s, kl2, L, er, rss, rvh, n_spec), 0.1, 1, 0, pi)
+
+        the original matlab routines integrates
+        xpol_integral(r,phi)
+        rmin=0.1, rmax=1.
+        phimin=0.,phimax=1.
+
+        when using python, x and y are reversed, however
+        this does not matter unless the bounds are specified in the right order
         """
-        assert False
+        ans, err = dblquad(self._xpol_integralfunc, 0.1, 1., lambda x : 0., lambda x : 1., args=[[rvh]])
+        return ans
 
-    def _xpol_integralfunc(self, r, phi, rvh):
 
-        nr = len(r)
+    def _xpol_integralfunc(self, r, phi, *args):
+        """
+        while the original matlab function
+        returns a vector, this function
+        returns a scalar, as the dblquad function
+        in python requires so
+        """
+
+        rvh = args[0][0]
+
+        #nr = len(r)
 
         r2 = r**2.
 
@@ -206,17 +227,15 @@ class I2EM(SurfaceScatter):
         fsh = (0.2821/au) *np.exp(-au**2.) -0.5 *(1.- math.erf(au))
         sha = 1./(1. + fsh)
 
-
         # calculate expressions for the surface spectra
-        wn, wm = self._calc_roughness_spectra_matrix(nr, rx, ry) 
+        wn, wm = self._calc_roughness_spectra_matrix(rx, ry) 
 
         # this can be done much faster !!!
-        vhmnsum = np.zeros(nr)
-        idx = np.arange(self.nspec)+1.
-        for n in range(idx):
-            for m in range(idx):
-                vhmnsum += wn[n,:] * wm[m,:] * (self._ks2*self._cs2)**(n+m)/math.factorial(n)/math.factorial(m)
-
+        vhmnsum = 0.
+        idx = np.arange(self.n_spec)+1
+        for n in idx:
+            for m in idx:
+                vhmnsum += wn[n-1] * wm[m-1] * (self._ks2*self._cs2)**(n+m)/math.factorial(n)/math.factorial(m)
 
         # compute VH scattering coefficient
         acc = np.exp(-2.* self._ks2 *self._cs2) /(16. * np.pi)
@@ -224,7 +243,7 @@ class I2EM(SurfaceScatter):
         y = VH * sha
         return y
     
-    def _calc_roughness_spectra_matrix(self, nr, nx, ny):
+    def _calc_roughness_spectra_matrix(self, nx, ny):
         """
         calculate roughness spectra
         needs to return a matrix for further use
@@ -232,14 +251,14 @@ class I2EM(SurfaceScatter):
         """
 
         if self.acf_type == 'gauss':
-            R = GaussianSpectrum()
+            R = GaussianSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
         elif self.acf_type == 'exp15':
-            R = ExponentialSpectrum()
+            R = ExponentialSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
         else:
             assert False
 
-        wn = R.calc_wn_matrix(nr, nx, ny)
-        wm = R.calc_wm_matrix(nr, nx, ny)
+        wn = R.calc_wn_matrix(nx, ny, self.n_spec)
+        wm = R.calc_wm_matrix(nx, ny, self.n_spec)
         return wn, wm
 
 
@@ -463,8 +482,9 @@ class Roughness(object):
         self.phi = kwargs.get('phi', None)
         self.phis = kwargs.get('phis', None)
         self.freq = kwargs.get('freq', None)
-        self.n = np.arange(self.niter)+1
+        
         self._check()
+        self.n = np.arange(self.niter)+1
         self._init()
 
     def wn(self):
@@ -472,19 +492,21 @@ class Roughness(object):
 
     def _init(self):
         ss = np.sin(self.thetas)
-        s = np.sin(self.theta)
+        self._s = np.sin(self.theta)
         sf = np.sin(self.phi)
         sfs = np.sin(self.phis)
         cfs = np.cos(self.phis)
         cf = np.cos(self.phi)
         lam = f2lam(self.freq)
         self.k = 2.*np.pi / lam
+        self._kl = self.k*self.l
+        self._kl2 = self._kl**2.
         
         # todo whereis this defined ???
-        self.wvnb = self.k * np.sqrt( (ss *cfs - s *cf)**2. + (ss * sfs - s * sf)**2. )
+        self.wvnb = self.k * np.sqrt( (ss *cfs - self._s *cf)**2. + (ss * sfs - self._s * sf)**2. )
 
     def _check(self):
-        assert self.niter is not None
+        assert self.niter is not None, 'ERROR: niter was not set!'
         assert self.l is not None
         assert self.sig is not None 
         assert self.theta is not None
@@ -505,19 +527,19 @@ class GaussianSpectrum(Roughness):
         rss = np.sqrt(2.)*self.sig/self.l
         return wn, rss
 
-    def calc_wn_matrix(self, nr, rx, ry):
-        wn = np.zeros((self.nspec, nr))
-        for i in xrange(self.nspec):
+    def calc_wn_matrix(self, rx, ry, nspec):
+        wn = np.zeros(nspec)
+        for i in xrange(nspec):
             n = i + 1
-            wn[n,:] = 0.5 *self._kl2/float(n) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*n))
+            wn[n-1] = 0.5 *self._kl2/float(n) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*n))
         return wn
 
-    def calc_wm_matrix(self, nr, rx, ry):
-        wm = np.zeros((self.nspec, nr))
-        for i in xrange(self.nspec):
+    def calc_wm_matrix(self, rx, ry, nspec):
+        wm = np.zeros(nspec)
+        for i in xrange(nspec):
             n = i + 1
-            wm[n,:] = 0.5 *self._kl2/float(n) * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*n))
-        return wn
+            wm[n-1] = 0.5 *self._kl2/float(n) * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*n))
+        return wm
 
 
 class ExponentialSpectrum(Roughness):
