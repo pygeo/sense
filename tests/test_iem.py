@@ -4,7 +4,6 @@ import os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)) + os.sep + "..")
 
 from sense.surface import I2EM
-import numpy as np
 
 class Test_IEM(unittest.TestCase):
     def setUp(self):
@@ -20,7 +19,7 @@ class Test_IEM(unittest.TestCase):
     def test_init(self):
         O = I2EM(self.f, self.eps, self.s, self.l, self.theta)
         self.assertEqual(O.eps, self.eps)
-        self.assertEqual(O.ks, O.k*O.s)
+        self.assertEqual(O.ks, O.k*O.sig)
         self.assertEqual(O.kl, O.k*O.l)
 
     def test_scat(self):

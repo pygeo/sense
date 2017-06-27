@@ -119,7 +119,7 @@ class I2EM(SurfaceScatter):
         idx = np.arange(self.niter)+1
         self.fac = map(math.factorial, idx)  # factorial for all N itterations; this is stored as it is needed multipole times
 
-        self.wn = self.calc_roughness_spectrum(acf_type=self.acf_type) 
+        self.wn, self.rss = self.calc_roughness_spectrum(acf_type=self.acf_type) 
         Ivv, Ihh = self._calc_Ipp()
         Ivv_abs = np.abs(Ivv)
         Ihh_abs = np.abs(Ihh)
@@ -127,22 +127,34 @@ class I2EM(SurfaceScatter):
         # calculate shadowing effects
         ShdwS = self._calc_shadowing()
 
-        a0 = self.wn / self.fac * (self.s**(2.*idx))
+        a0 = self.wn / self.fac * (self.sig**(2.*idx))
 
         # final backscatter calculation
-        hlp = ShdwS*0.5*self.k**2*np.exp(-self.s**2*(self._kz**2.+self._ksz**2.))
+        hlp = ShdwS*0.5*self.k**2*np.exp(-self.sig**2*(self._kz**2.+self._ksz**2.))
         sigvv = np.sum(a0 * Ivv_abs**2.) * hlp
         sighh = np.sum(a0 * Ihh_abs**2.) * hlp
         return  sigvv, sighh
 
     def _i2em_cross(self):
-        assert False
+        #assert False
         return None
 
     def _calc_shadowing(self):
-        assert False
-        print('TODO: shadowing')
-        return 1.  ## todo
+
+        if self.mode == 'backscatter':    #todo comparison with binary variable instead of string to be faster ??
+
+            ct = np.cos(self.theta)/np.sin(self.theta)
+            cts = np.cos(self.thetas)/np.sin(self.thetas)
+            rslp = self.rss
+            ctorslp = ct / math.sqrt(2.) /rslp
+            ctsorslp = cts / np.sqrt(2.) /rslp
+            shadf = 0.5 *(np.exp(-ctorslp**2.) / np.sqrt(np.pi)/ctorslp - math.erfc(ctorslp))
+            shadfs = 0.5 *(np.exp(-ctsorslp**2.) / np.sqrt(np.pi)/ctsorslp - math.erfc(ctsorslp))
+            ShdwS = 1./(1. + shadf + shadfs)
+        else:
+            ShdwS = 1.
+
+        return ShdwS
 
     def calc_roughness_spectrum(self, acf_type=None):
         """
@@ -152,12 +164,13 @@ class I2EM(SurfaceScatter):
         assert 'Validate with code again'
         if acf_type == 'gauss':
             # gaussian autocorrelation function
-            S = GaussianSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq)
+            S = GaussianSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq, sig=self.sig)
         elif acf_type == 'exp15':
             # 1.5 power exponential function
-            S = ExponentialSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq)
+            S = ExponentialSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi,phis=self.phis, freq=self.freq, sig=self.sig)
         else:
             assert False, 'Invalid surface roughness spectrum: ' + str(acf_type)
+        
         return S.wn()  # returns wn as an array with length NITER
 
     def _calc_Ipp(self):
@@ -330,6 +343,7 @@ class Roughness(object):
     def __init__(self, **kwargs):
         self.niter = kwargs.get('niter', None)
         self.l = kwargs.get('l', None)
+        self.sig = kwargs.get('sig', None)
         self.theta = kwargs.get('theta', None)
         self.thetas = kwargs.get('thetas', None)
         self.phi = kwargs.get('phi', None)
@@ -358,6 +372,7 @@ class Roughness(object):
     def _check(self):
         assert self.niter is not None
         assert self.l is not None
+        assert self.sig is not None 
         assert self.theta is not None
         assert self.thetas is not None
         assert self.phi is not None
@@ -373,7 +388,8 @@ class GaussianSpectrum(Roughness):
         # Fung (1994), Eq. 2B.4; except for wvnb
         n = self.n
         wn = (self.l**2.)/(2.*n) * np.exp(-(self.wvnb*self.l)**2. / (4.*n))
-        return wn
+        rss = np.sqrt(2.)*self.sig/self.l
+        return wn, rss
 
 class ExponentialSpectrum(Roughness):
     """
@@ -386,7 +402,8 @@ class ExponentialSpectrum(Roughness):
         # Fung (1994): eq. 2.B.14
         n = self.n
         wn= self.l**2. / n**2. * (1.+(self.wvnb*self.l/n)**2.)**(-1.5)
-        return wn
+        rss = self.sig/self.l
+        return wn, rss
 
 
 
