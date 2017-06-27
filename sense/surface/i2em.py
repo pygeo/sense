@@ -173,6 +173,74 @@ class I2EM(SurfaceScatter):
         """
         assert False
 
+    def _xpol_integralfunc(self, r, phi, rvh):
+
+        nr = len(r)
+
+        r2 = r**2.
+
+        sf = np.sin(phi)
+        csf = np.cos(phi)
+        rx = r * csf
+        ry = r * sf
+
+        rp = 1. + rvh
+        rm = 1. - rvh
+
+        q = np.sqrt(1.0001 - r2)
+        qt = np.sqrt(self.eps - r2)
+
+        a = rp / q
+        b = rm / q
+        c = rp / qt
+        d = rm / qt
+
+        # calculate cross-pol coefficient
+        B3 = rx * ry / self._cs
+        fvh1 = (b-c)*(1.- 3.*rvh) - (b - c/self.eps) * rp
+        fvh2 = (a-d)*(1.+ 3.*rvh) - (a - d*self.eps) * rm
+        Fvh = ( np.abs( (fvh1 + fvh2) *B3))**2.
+
+        # calculate x-pol shadowing
+        au = q /r /1.414 /self.rss
+        fsh = (0.2821/au) *np.exp(-au**2.) -0.5 *(1.- math.erf(au))
+        sha = 1./(1. + fsh)
+
+
+        # calculate expressions for the surface spectra
+        wn, wm = self._calc_roughness_spectra_matrix(nr, rx, ry) 
+
+        # this can be done much faster !!!
+        vhmnsum = np.zeros(nr)
+        idx = np.arange(self.nspec)+1.
+        for n in range(idx):
+            for m in range(idx):
+                vhmnsum += wn[n,:] * wm[m,:] * (self._ks2*self._cs2)**(n+m)/math.factorial(n)/math.factorial(m)
+
+
+        # compute VH scattering coefficient
+        acc = np.exp(-2.* self._ks2 *self._cs2) /(16. * np.pi)
+        VH = 4. * acc * Fvh * vhmnsum * r
+        y = VH * sha
+        return y
+    
+    def _calc_roughness_spectra_matrix(self, nr, nx, ny):
+        """
+        calculate roughness spectra
+        needs to return a matrix for further use
+        in crosspol calculations
+        """
+
+        if self.acf_type == 'gauss':
+            R = GaussianSpectrum()
+        elif self.acf_type == 'exp15':
+            R = ExponentialSpectrum()
+        else:
+            assert False
+
+        wn = R.calc_wn_matrix(nr, nx, ny)
+        wm = R.calc_wm_matrix(nr, nx, ny)
+        return wn, wm
 
 
 
@@ -437,6 +505,21 @@ class GaussianSpectrum(Roughness):
         rss = np.sqrt(2.)*self.sig/self.l
         return wn, rss
 
+    def calc_wn_matrix(self, nr, rx, ry):
+        wn = np.zeros((self.nspec, nr))
+        for i in xrange(self.nspec):
+            n = i + 1
+            wn[n,:] = 0.5 *self._kl2/float(n) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*n))
+        return wn
+
+    def calc_wm_matrix(self, nr, rx, ry):
+        wm = np.zeros((self.nspec, nr))
+        for i in xrange(self.nspec):
+            n = i + 1
+            wm[n,:] = 0.5 *self._kl2/float(n) * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*n))
+        return wn
+
+
 class ExponentialSpectrum(Roughness):
     """
     exponential spectrum
@@ -451,7 +534,11 @@ class ExponentialSpectrum(Roughness):
         rss = self.sig/self.l
         return wn, rss
 
+    def calc_wn_matrix(self, nr):
+        assert False
 
+    def calc_wm_matrix(self, nr):
+        assert False
 
 
 
