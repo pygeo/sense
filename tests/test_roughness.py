@@ -20,12 +20,12 @@ class TestRoughness(unittest.TestCase):
         pass
 
     def test_gauss(self):
-        S = GaussianSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
+        S = GaussianSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq, sig=0.02)
         S.wn()
 
         # 1st  test
         S.wvnb = 0.
-        wn = S.wn()
+        wn, rss = S.wn()
         self.assertEqual(wn[0], self.l**2. / 2.)
         self.assertEqual(wn[1], self.l**2. / 4.)
         self.assertTrue(len(wn), 2)
@@ -33,23 +33,23 @@ class TestRoughness(unittest.TestCase):
 
         # test 2
         S.wvnb = 1.
-        wn = S.wn()
+        wn, rss = S.wn()
         self.assertEqual(wn1[0]*np.exp(-(self.l**2./4.)), wn[0])
         self.assertEqual(wn1[1]*np.exp(-(self.l**2./8.)), wn[1])
 
     def test_exp(self):
-        S = ExponentialSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
+        S = ExponentialSpectrum(niter=self.niter, l=self.l, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq, sig=0.02)
         S.wn()
 
         # test 1
         S.wvnb = 0.
-        wn = S.wn()
+        wn, rss = S.wn()
         self.assertEqual(self.l**2. * 1.**-1.5, wn[0])
         self.assertEqual(self.l**2.*0.25*1.**-1.5, wn[1])
 
         # test 2
         S.wvnb = 1.
-        wn = S.wn()
+        wn, rss = S.wn()
         self.assertEqual(self.l**2.*(1.+self.l**2.)**-1.5, wn[0])
         self.assertEqual(0.25*self.l**2.*(1.+self.l**2./4.)**-1.5, wn[1])
 
