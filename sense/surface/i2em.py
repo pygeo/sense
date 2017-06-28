@@ -40,6 +40,9 @@ class I2EM(SurfaceScatter):
             specify if number of spectral components should be automatically
             determined for cross-pol calculations
             if False, then nspec=15
+        xpol : bool
+            perform cross-pol calculations if possible
+            might be slow in case of I2EM usage
         """
 
         self.freq = f
@@ -59,6 +62,7 @@ class I2EM(SurfaceScatter):
         self.mode = 'backscatter'
 
         self.auto = kwargs.get('auto', True)
+        self.xpol = kwargs.get('xpol', True)
 
         # do initializations for backscatter calculations
         self._init_hlp()
@@ -125,7 +129,8 @@ class I2EM(SurfaceScatter):
         assert isinstance(self.theta, float), 'Currently array processing not supported yet!'
         # calculate backscattering coefficients
         self.vv, self.hh = self._i2em_bistatic()
-        self.hv = self._i2em_cross()
+        if self.xpol:
+            self.hv = self._i2em_cross()
 
     def _i2em_bistatic(self):
         """
