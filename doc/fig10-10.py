@@ -2,6 +2,9 @@
 comparison with figure 10-10 
 in Ulaby 2014
 
+
+
+
 """
 
 import sys
@@ -43,8 +46,9 @@ vv2=[]
 hv1=[]
 hv2=[]
 for t in theta:
-    I1 = I2EM(f, eps, s, l, t, acf_type='gauss', xpol=True)
-    I2 = I2EM(f, eps, s, l, t, acf_type='exp15', xpol=True)
+    I1 = I2EM(f, eps, s, l, t, acf_type='gauss', xpol=False)
+    I2 = I2EM(f, eps, s, l, t, acf_type='exp15', xpol=False)
+    print I1.ks, I1.kl
     hh1.append(I1.hh)
     hh2.append(I2.hh)
     vv1.append(I1.vv)
@@ -58,8 +62,6 @@ vv1 = np.array(vv1)
 vv2 = np.array(vv2)
 hv1 = np.array(hv1)
 hv2 = np.array(hv2)
-
-
 
 ax.plot(theta_deg, db(hh2), color='red', label='hh')
 ax.plot(theta_deg, db(hh1), color='blue', label='hh')
