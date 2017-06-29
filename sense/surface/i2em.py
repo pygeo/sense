@@ -568,10 +568,10 @@ class ExponentialSpectrum(Roughness):
         rss = self.sig/self.l
         return wn, rss
 
-    def calc_wn_matrix(self, nr):
+    def calc_wn_matrix(self, rx, ry, nspec):
         assert False
 
-    def calc_wm_matrix(self, nr):
+    def calc_wm_matrix(self, rx, ry, nspec):
         assert False
 
 
