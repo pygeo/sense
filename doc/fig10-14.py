@@ -2,7 +2,8 @@
 comparison with figure 10-14
 in Ulaby 2014
 
-polarization rations
+can actully not use this fugure as not e´nough information
+in the reference to reproduce the figure
 
 
 """
@@ -21,25 +22,18 @@ def db(x):
     return 10.*np.log10(x)
 
 
-
-assert False, 'Not implemented yet!'
-
-
-
 plt.close('all')
 
 
-theta_deg = np.linspace(0.,70.)
+theta_deg = np.linspace(0.,70., 4)
 theta = np.deg2rad(theta_deg)
 
 f = plt.figure()
-ax = f.add_subplot(111)
+ax1 = f.add_subplot(121)
+ax2 = f.add_subplot(122)
 
-
-eps = 11.3-1.5j
 f = 3.
 
-s = 1./100.
 l = 10./100.
 
 
@@ -50,35 +44,43 @@ vv1=[]
 vv2=[]
 hv1=[]
 hv2=[]
-for t in theta:
-    I1 = I2EM(f, eps, s, l, t, acf_type='gauss', xpol=False)
-    I2 = I2EM(f, eps, s, l, t, acf_type='exp15', xpol=False)
-    print I1.ks, I1.kl
+xpol = False
+auto=False
+ks = []
+
+theta = np.deg2rad(30.)
+
+
+S = np.linspace(0.001,0.1,4)
+
+
+for s in S:
+    I1 = I2EM(f, 4.7-0.6j, s, l, theta, acf_type='gauss', xpol=xpol, auto=auto)
     hh1.append(I1.hh)
-    hh2.append(I2.hh)
     vv1.append(I1.vv)
-    vv2.append(I2.vv)
-    #hv1.append(I1.hv)
-    #hv2.append(I2.hv)
+    ks.append(I1.ks)
+    if xpol:
+        hv1.append(I1.hv)
 
 hh1 = np.array(hh1)
-hh2 = np.array(hh2)
 vv1 = np.array(vv1)
-vv2 = np.array(vv2)
-hv1 = np.array(hv1)
-hv2 = np.array(hv2)
+if xpol:
+    hv1 = np.array(hv1)
+ks = np.array(ks)
 
-ax.plot(theta_deg, db(hh2), color='red', label='hh')
-ax.plot(theta_deg, db(hh1), color='blue', label='hh')
+p1 = hh1/vv1
+if xpol:
+    q1 = hv1/vv1
 
-ax.plot(theta_deg, db(vv2), color='red', label='vv', linestyle='--')
-ax.plot(theta_deg, db(vv1), color='blue', label='vv', linestyle='--')
 
-#ax.plot(theta_deg, db(hv2), color='red', label='hv', linestyle='.')
-#ax.plot(theta_deg, db(hv1), color='blue', label='hv', linestyle='.')
 
-ax.grid()
-ax.set_xlim(0.,70.)
-ax.set_ylim(-100.,30.)
+ax1.plot(ks, db(p1), color='red')
+ax1.set_xlim(0.,4.)
+ax1.set_ylim(-3.5,0.5)
+
+if xpol:
+    ax2.plot(ks, db(q1), color='red')
+
+
 
 plt.show()
