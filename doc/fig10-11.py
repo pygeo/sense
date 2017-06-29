@@ -50,8 +50,8 @@ vv2=[]
 hv1=[]
 hv2=[]
 for t in theta:
-    I1 = I2EM(f, eps, s1, l, t, acf_type=acf_type, xpol=False)
-    I2 = I2EM(f, eps, s2, l, t, acf_type=acf_type, xpol=False)
+    I1 = I2EM(f, eps, s1, l, t, acf_type=acf_type, xpol=True)
+    I2 = I2EM(f, eps, s2, l, t, acf_type=acf_type, xpol=True)
     hh1.append(I1.hh)
     hh2.append(I2.hh)
     vv1.append(I1.vv)
