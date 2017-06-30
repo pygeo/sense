@@ -18,6 +18,30 @@ from scipy.integrate import dblquad
 
 from numba import jit
 
+
+@jit(cache=True,nopython=True)
+def _calc_roughness_spectra_matrix(nx, ny, kl2, nspec, s, acf_type_id):
+    """
+    calculate roughness spectra
+    needs to return a matrix for further use
+    in crosspol calculations
+    """
+
+    if acf_type_id == 1:  # gauss
+        wm = _calc_wm_matrix_gauss(nx, ny, nspec, kl2, s)
+        wn = _calc_wn_matrix_gauss(nx, ny, nspec, kl2, s)
+
+    elif acf_type_id == 2:  # exp
+        wm = _calc_wm_matrix_exp(nx, ny, nspec, kl2, s)
+        wn = _calc_wn_matrix_exp(nx, ny, nspec, kl2, s)
+    else:
+        assert False
+    return wn, wm
+
+
+
+
+
 class I2EM(SurfaceScatter):
     def __init__(self, f, eps, sig, l, theta, **kwargs):
         """
@@ -195,8 +219,18 @@ class I2EM(SurfaceScatter):
         when using python, x and y are reversed, however
         this does not matter unless the bounds are specified in the right order
         """
-        ans, err = dblquad(self._xpol_integralfunc, 0.1, 1., lambda x : 0., lambda x : 1., args=[[rvh,self.eps, self._ks2, self._cs2, self.rss, self._cs, self._fac, self._kl2]])
+        ans, err = dblquad(self._xpol_integralfunc, 0.1, 1., lambda x : 0., lambda x : 1., args=[[rvh,self.eps, self._ks2, self._cs2, self.rss, self._cs, self._fac, self._kl2, self._s, self._get_acf_id()]])
         return ans
+
+
+
+    def _get_acf_id(self):
+        if self.acf_type == 'gauss':
+            return 1
+        if self.acf_type == 'exp15':
+            return 2
+        assert False, 'Unknown ACF type'
+
 
     @jit(cache=True)
     def _xpol_integralfunc(self, r, phi, *args):
@@ -216,7 +250,9 @@ class I2EM(SurfaceScatter):
         fac = args[0][6]
         nspec = len(fac)
         kl2 = args[0][7]
-        
+        s = args[0][8]
+        acf_type_id = args[0][9]
+
         r2 = r**2.
         sf = np.sin(phi)
         csf = np.cos(phi)
@@ -247,7 +283,7 @@ class I2EM(SurfaceScatter):
 
         # calculate expressions for the surface spectra
         
-        wn, wm = self._calc_roughness_spectra_matrix(rx, ry, kl2, nspec) 
+        wn, wm = _calc_roughness_spectra_matrix(rx, ry, kl2, nspec, s, acf_type_id) 
 
         vhmnsum = 0.
         for i in xrange(nspec):
@@ -260,30 +296,6 @@ class I2EM(SurfaceScatter):
         y = VH * sha
         return y
 
-    def _calc_roughness_spectra_matrix(self, nx, ny, kl2, nspec):
-        """
-        calculate roughness spectra
-        needs to return a matrix for further use
-        in crosspol calculations
-        """
-
-        if self.acf_type == 'gauss':
-            #R = GaussianSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
-            wm = _calc_wm_matrix_gauss(nx, ny, nspec, kl2, self._s)
-            wn = _calc_wn_matrix_gauss(nx, ny, nspec, kl2, self._s)
-
-        elif self.acf_type == 'exp15':
-            #R = ExponentialSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
-            #wn = R.calc_wn_matrix(nx, ny, self.n_spec)
-            #wm = R.calc_wm_matrix(nx, ny, self.n_spec)
-
-            wm = _calc_wm_matrix_exp(nx, ny, nspec, kl2, self._s)
-            wn = _calc_wn_matrix_exp(nx, ny, nspec, kl2, self._s)
-
-        else:
-            assert False
-
-        return wn, wm
 
 
 

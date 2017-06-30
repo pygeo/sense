@@ -35,7 +35,7 @@ start = time.time()
 plt.close('all')
 
 
-theta_deg = np.linspace(0.,70., 4)
+theta_deg = np.linspace(0.,70., 40)
 theta = np.deg2rad(theta_deg)
 
 f = plt.figure()
