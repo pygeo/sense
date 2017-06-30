@@ -15,6 +15,9 @@ import math
 
 from scipy.integrate import dblquad
 
+
+from numba import jit
+
 class I2EM(SurfaceScatter):
     def __init__(self, f, eps, sig, l, theta, **kwargs):
         """
@@ -88,6 +91,10 @@ class I2EM(SurfaceScatter):
             self.n_spec = nspec
         else:
             self.n_spec = 15
+
+        I = np.arange(self.n_spec)
+        self._fac = map(math.factorial, I+1)  # factorial(n)
+
 
 
     def _estimate_itterations(self):
@@ -190,7 +197,7 @@ class I2EM(SurfaceScatter):
         ans, err = dblquad(self._xpol_integralfunc, 0.1, 1., lambda x : 0., lambda x : 1., args=[[rvh]])
         return ans
 
-
+    @jit(cache=True)
     def _xpol_integralfunc(self, r, phi, *args):
         """
         while the original matlab function
@@ -200,8 +207,6 @@ class I2EM(SurfaceScatter):
         """
 
         rvh = args[0][0]
-
-        #nr = len(r)
 
         r2 = r**2.
         sf = np.sin(phi)
@@ -234,17 +239,10 @@ class I2EM(SurfaceScatter):
         # calculate expressions for the surface spectra
         wn, wm = self._calc_roughness_spectra_matrix(rx, ry) 
 
-        # this can be done much faster !!!
-        #vhmnsum = 0.
-        I = np.arange(self.n_spec)
-        idx = I+1.
-        fac = map(math.factorial, idx)
-        #for i in I:
-        #n = idx[i]
-        #for j in I:
-        #m = idx[j]
-        #vhmnsum +=
-        vhmnsum = np.array([np.array([wn[i] * wm[j] * (self._ks2*self._cs2)**(idx[i]+idx[j])/fac[i]/fac[j] for j in I]).sum() for i in I]).sum()
+        vhmnsum = 0.
+        for i in xrange(self.n_spec):
+            for j in xrange(self.n_spec):
+                vhmnsum += wn[i] * wm[j] * (self._ks2*self._cs2)**((i+1)+(j+1))/self._fac[i]/self._fac[j] 
 
         # compute VH scattering coefficient
         acc = np.exp(-2.* self._ks2 *self._cs2) /(16. * np.pi)
@@ -252,7 +250,6 @@ class I2EM(SurfaceScatter):
         y = VH * sha
         return y
 
-    # todo use numba to speed up ??
     
     def _calc_roughness_spectra_matrix(self, nx, ny):
         """
@@ -261,15 +258,24 @@ class I2EM(SurfaceScatter):
         in crosspol calculations
         """
 
+        kl2 = (self.k*self.l)**2.
+
         if self.acf_type == 'gauss':
-            R = GaussianSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
+            #R = GaussianSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
+            wm = _calc_wm_matrix_gauss(nx, ny, self.n_spec, kl2, self._s)
+            wn = _calc_wn_matrix_gauss(nx, ny, self.n_spec, kl2, self._s)
+
         elif self.acf_type == 'exp15':
-            R = ExponentialSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
+            #R = ExponentialSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
+            #wn = R.calc_wn_matrix(nx, ny, self.n_spec)
+            #wm = R.calc_wm_matrix(nx, ny, self.n_spec)
+
+            wm = _calc_wm_matrix_exp(nx, ny, self.n_spec, kl2, self._s)
+            wn = _calc_wn_matrix_exp(nx, ny, self.n_spec, kl2, self._s)
+
         else:
             assert False
 
-        wn = R.calc_wn_matrix(nx, ny, self.n_spec)
-        wm = R.calc_wm_matrix(nx, ny, self.n_spec)
         return wn, wm
 
 
@@ -527,6 +533,21 @@ class Roughness(object):
         assert self.freq is not None
 
 
+
+@jit(cache=False, nopython=True)
+def _calc_wn_matrix_gauss(rx, ry, nspec, kl2, s):
+    wn = np.zeros(nspec)
+    for i in xrange(nspec):
+        wn[i] = 0.5 *kl2/(i+1.) * np.exp(-kl2*((rx-s)**2. + ry**2.)/(4.*(i+1))) 
+    return wn
+
+@jit(cache=False, nopython=True)
+def _calc_wm_matrix_gauss(rx, ry, nspec, kl2, s):
+    wm = np.zeros(nspec)
+    for i in xrange(nspec):
+        wm[i] = 0.5 *kl2/(i+1.) * np.exp(-kl2*((rx+s)**2. + ry**2.)/(4.*(i+1))) 
+    return wm
+
 class GaussianSpectrum(Roughness):
     def __init__(self, **kwargs):
         super(GaussianSpectrum, self).__init__(**kwargs)
@@ -539,18 +560,25 @@ class GaussianSpectrum(Roughness):
         return wn, rss
 
     def calc_wn_matrix(self, rx, ry, nspec):
-        #wn = np.zeros(nspec)
-        #for i in xrange(nspec):
-            #n = i + 1.
-            #wn[i] = 0.5 *self._kl2/(i+1.) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*(i+1)))
-        return np.array([0.5 *self._kl2/(i+1.) * np.exp(-self._kl2*((rx-self._s)**2. + ry**2.)/(4.*(i+1))) for i in xrange(nspec)])
+        return _calc_wn_matrix_gauss(rx, ry, nspec, self._kl2, self._s)
 
     def calc_wm_matrix(self, rx, ry, nspec):
-        #wm = np.zeros(nspec)
-        #for i in xrange(nspec):
-        #    n = i + 1.
-        #wm[i] = 0.5 *self._kl2/n * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*n))
-        return np.array([0.5 *self._kl2/(i+1) * np.exp(-self._kl2*((rx+self._s)**2. + ry**2.)/(4.*(i+1))) for i in xrange(nspec)])
+
+        return _calc_wm_matrix_gauss(rx, ry, nspec, self._kl2, self._s)
+
+@jit(cache=True,nopython=True)
+def _calc_wn_matrix_exp(rx, ry, nspec, kl2, s):
+    wn = np.zeros(nspec)
+    for i in xrange(nspec):
+        wn[i] = (i+1) * kl2 / ((i+1)**2.+kl2*((rx-s)**2. + ry**2.))**1.5
+    return wn
+
+@jit(cache=True,nopython=True)
+def _calc_wm_matrix_exp(rx, ry, nspec, kl2, s):
+    wm = np.zeros(nspec)
+    for i in xrange(nspec):
+        wm[i] = (i+1) * kl2 / ((i+1)**2.+kl2*((rx+s)**2. + ry**2.))**1.5
+    return wm
 
 
 class ExponentialSpectrum(Roughness):
@@ -566,14 +594,16 @@ class ExponentialSpectrum(Roughness):
         wn= self.l**2. / n**2. * (1.+(self.wvnb*self.l/n)**2.)**(-1.5)
         rss = self.sig/self.l
         return wn, rss
-
+    
     def calc_wn_matrix(self, rx, ry, nspec):
         #for i in xrange(nspec):
         # n = i+1
-        return np.array([(i+1) * self._kl2 / ((i+1)**2.+self._kl2*((rx-self._s)**2. + ry**2.))**1.5 for i in xrange(nspec)])
+        #return np.array([(i+1) * self._kl2 / ((i+1)**2.+self._kl2*((rx-self._s)**2. + ry**2.))**1.5 for i in xrange(nspec)])
+        return _calc_wn_matrix_gauss(rx, ry, nspec, self._kl2, self._s)
 
     def calc_wm_matrix(self, rx, ry, nspec):
-        return np.array([(i+1) * self._kl2 / ((i+1)**2.+self._kl2*((rx+self._s)**2. + ry**2.))**1.5 for i in xrange(nspec)])
+        #return np.array([(i+1) * self._kl2 / ((i+1)**2.+self._kl2*((rx+self._s)**2. + ry**2.))**1.5 for i in xrange(nspec)])
+        return _calc_wm_matrix_gauss(rx, ry, nspec, self._kl2, self._s)
 
 
 

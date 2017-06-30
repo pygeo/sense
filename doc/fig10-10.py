@@ -24,10 +24,14 @@ from sense.surface import I2EM
 
 import matplotlib.pyplot as plt
 
+import time
+
+
+
 def db(x):
     return 10.*np.log10(x)
 
-
+start = time.time()
 plt.close('all')
 
 
@@ -86,5 +90,5 @@ ax.plot(theta_deg, db(hv1), color='blue', label='hv', linestyle='-.')
 ax.grid()
 ax.set_xlim(0.,70.)
 ax.set_ylim(-100.,30.)
-
+print 'Elapsed time: ', time.time()-start
 plt.show()
