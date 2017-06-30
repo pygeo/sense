@@ -55,6 +55,7 @@ class I2EM(SurfaceScatter):
         self.sig = sig
         self.ks = self.k*self.sig
         self.l = l
+        self._kl2 = (self.k*self.l)**2.
         self.acf_type = kwargs.get('acf_type', 'gauss')
         super(I2EM, self).__init__(eps, k*sig, theta, kl=k*l)
         
@@ -194,7 +195,7 @@ class I2EM(SurfaceScatter):
         when using python, x and y are reversed, however
         this does not matter unless the bounds are specified in the right order
         """
-        ans, err = dblquad(self._xpol_integralfunc, 0.1, 1., lambda x : 0., lambda x : 1., args=[[rvh]])
+        ans, err = dblquad(self._xpol_integralfunc, 0.1, 1., lambda x : 0., lambda x : 1., args=[[rvh,self.eps, self._ks2, self._cs2, self.rss, self._cs, self._fac, self._kl2]])
         return ans
 
     @jit(cache=True)
@@ -207,7 +208,15 @@ class I2EM(SurfaceScatter):
         """
 
         rvh = args[0][0]
-
+        eps = args[0][1]
+        ks2 = args[0][2]
+        cs2 = args[0][3]
+        rss = args[0][4]
+        cs = args[0][5]
+        fac = args[0][6]
+        nspec = len(fac)
+        kl2 = args[0][7]
+        
         r2 = r**2.
         sf = np.sin(phi)
         csf = np.cos(phi)
@@ -218,7 +227,7 @@ class I2EM(SurfaceScatter):
         rm = 1. - rvh
 
         q = np.sqrt(1.0001 - r2)
-        qt = np.sqrt(self.eps - r2)
+        qt = np.sqrt(eps - r2)
 
         a = rp / q
         b = rm / q
@@ -226,52 +235,50 @@ class I2EM(SurfaceScatter):
         d = rm / qt
 
         # calculate cross-pol coefficient
-        B3 = rx * ry / self._cs
-        fvh1 = (b-c)*(1.- 3.*rvh) - (b - c/self.eps) * rp
-        fvh2 = (a-d)*(1.+ 3.*rvh) - (a - d*self.eps) * rm
+        B3 = rx * ry / cs
+        fvh1 = (b-c)*(1.- 3.*rvh) - (b - c/eps) * rp
+        fvh2 = (a-d)*(1.+ 3.*rvh) - (a - d*eps) * rm
         Fvh = ( np.abs( (fvh1 + fvh2) *B3))**2.
 
         # calculate x-pol shadowing
-        au = q /r /1.414 /self.rss
+        au = q /r /1.414 /rss
         fsh = (0.2821/au) *np.exp(-au**2.) -0.5 *(1.- math.erf(au))
         sha = 1./(1. + fsh)
 
         # calculate expressions for the surface spectra
-        wn, wm = self._calc_roughness_spectra_matrix(rx, ry) 
+        
+        wn, wm = self._calc_roughness_spectra_matrix(rx, ry, kl2, nspec) 
 
         vhmnsum = 0.
-        for i in xrange(self.n_spec):
-            for j in xrange(self.n_spec):
-                vhmnsum += wn[i] * wm[j] * (self._ks2*self._cs2)**((i+1)+(j+1))/self._fac[i]/self._fac[j] 
+        for i in xrange(nspec):
+            for j in xrange(nspec):
+                vhmnsum += wn[i] * wm[j] * (ks2*cs2)**((i+1)+(j+1))/fac[i]/fac[j] 
 
         # compute VH scattering coefficient
-        acc = np.exp(-2.* self._ks2 *self._cs2) /(16. * np.pi)
+        acc = np.exp(-2.* ks2 *cs2) /(16. * np.pi)
         VH = 4. * acc * Fvh * vhmnsum * r
         y = VH * sha
         return y
 
-    
-    def _calc_roughness_spectra_matrix(self, nx, ny):
+    def _calc_roughness_spectra_matrix(self, nx, ny, kl2, nspec):
         """
         calculate roughness spectra
         needs to return a matrix for further use
         in crosspol calculations
         """
 
-        kl2 = (self.k*self.l)**2.
-
         if self.acf_type == 'gauss':
             #R = GaussianSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
-            wm = _calc_wm_matrix_gauss(nx, ny, self.n_spec, kl2, self._s)
-            wn = _calc_wn_matrix_gauss(nx, ny, self.n_spec, kl2, self._s)
+            wm = _calc_wm_matrix_gauss(nx, ny, nspec, kl2, self._s)
+            wn = _calc_wn_matrix_gauss(nx, ny, nspec, kl2, self._s)
 
         elif self.acf_type == 'exp15':
             #R = ExponentialSpectrum(niter=self.niter, l=self.l, sig=self.sig, theta=self.theta, thetas=self.thetas, phi=self.phi, phis=self.phis, freq=self.freq)
             #wn = R.calc_wn_matrix(nx, ny, self.n_spec)
             #wm = R.calc_wm_matrix(nx, ny, self.n_spec)
 
-            wm = _calc_wm_matrix_exp(nx, ny, self.n_spec, kl2, self._s)
-            wn = _calc_wn_matrix_exp(nx, ny, self.n_spec, kl2, self._s)
+            wm = _calc_wm_matrix_exp(nx, ny, nspec, kl2, self._s)
+            wn = _calc_wn_matrix_exp(nx, ny, nspec, kl2, self._s)
 
         else:
             assert False
